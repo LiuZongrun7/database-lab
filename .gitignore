@@ -1,0 +1,7 @@
+target/
+*.mv.db
+*.trace.db
+*.zip
+.DS_Store
+.env
+*.log

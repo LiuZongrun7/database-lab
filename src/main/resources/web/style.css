@@ -1,0 +1,324 @@
+:root {
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --text: #1f2933;
+    --muted: #667085;
+    --line: #d7dde5;
+    --brand: #176b87;
+    --brand-dark: #0f4f66;
+    --danger: #b42318;
+    --ok: #067647;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    background: #12343f;
+    color: white;
+}
+
+.topbar h1 {
+    margin: 0 0 4px;
+    font-size: 24px;
+}
+
+.topbar p {
+    margin: 0;
+    color: #d7e4e8;
+}
+
+.user-badge {
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+main {
+    max-width: 1180px;
+    margin: 22px auto;
+    padding: 0 18px;
+}
+
+.login-panel,
+.app-view {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.login-panel {
+    max-width: 440px;
+    margin: 70px auto;
+}
+
+.hidden {
+    display: none !important;
+}
+
+h2, h3 {
+    margin-top: 0;
+}
+
+.hint,
+.section-head p {
+    color: var(--muted);
+}
+
+.form-grid,
+.card-form {
+    display: grid;
+    gap: 12px;
+}
+
+.form-grid label,
+.card-form label {
+    display: grid;
+    gap: 5px;
+    font-size: 14px;
+    color: #344054;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+}
+
+button {
+    border: 0;
+    border-radius: 6px;
+    padding: 9px 12px;
+    background: var(--brand);
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: var(--brand-dark);
+}
+
+button.secondary {
+    background: #e6eef2;
+    color: #19323c;
+}
+
+button.danger {
+    background: var(--danger);
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+}
+
+.tab {
+    background: #e8eef2;
+    color: #26343b;
+}
+
+.tab.active {
+    background: var(--brand);
+    color: white;
+}
+
+.logout {
+    margin-left: auto;
+    background: #475467;
+}
+
+.tab-page {
+    display: none;
+}
+
+.tab-page.active {
+    display: block;
+}
+
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.inline-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.card-form {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    padding: 14px;
+    margin-bottom: 16px;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.card-form h3,
+.card-form .wide {
+    grid-column: 1 / -1;
+}
+
+.card-form button {
+    width: fit-content;
+}
+
+.table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+th,
+td {
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    background: #eef3f6;
+    font-weight: 700;
+}
+
+tr:last-child td {
+    border-bottom: 0;
+}
+
+.status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #eef3f6;
+    font-size: 12px;
+}
+
+.status.APPROVED,
+.status.AVAILABLE,
+.status.RESOLVED,
+.status.CLOSED {
+    background: #e7f6ef;
+    color: var(--ok);
+}
+
+.status.PENDING,
+.status.IN_PROGRESS,
+.status.ASSIGNED {
+    background: #fff4df;
+    color: #9a5b00;
+}
+
+.status.REJECTED,
+.status.MAINTENANCE,
+.status.URGENT {
+    background: #fee4e2;
+    color: var(--danger);
+}
+
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 18px;
+}
+
+dialog {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    min-width: 420px;
+    max-width: 560px;
+}
+
+dialog::backdrop {
+    background: rgba(15, 23, 42, 0.45);
+}
+
+#modalBody {
+    display: grid;
+    gap: 12px;
+}
+
+#modalBody label {
+    display: grid;
+    gap: 5px;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+#modalCancel {
+    background: #e6eef2;
+    color: #19323c;
+}
+
+.toast {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    max-width: 420px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #12343f;
+    color: white;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+}
+
+.toast.error {
+    background: var(--danger);
+}
+
+@media (max-width: 760px) {
+    .topbar,
+    .section-head,
+    .inline-form,
+    .tabs {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .logout {
+        margin-left: 0;
+    }
+
+    .card-form,
+    .report-grid {
+        grid-template-columns: 1fr;
+    }
+}
