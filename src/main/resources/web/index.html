@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Lab Equipment System</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.min.css">
 </head>
 <body>
 <header class="topbar">
@@ -12,12 +13,13 @@
         <h1>Lab Equipment System</h1>
         <p>Campus laboratory reservation and maintenance portal</p>
     </div>
-    <div id="userBadge" class="user-badge">Not logged in</div>
+    <div id="userBadge" class="user-badge"><i class="icon-user"></i> Not logged in</div>
 </header>
 
 <main>
     <section id="loginView" class="login-panel">
-        <h2>Login</h2>
+        <h2>Welcome Back</h2>
+        <p class="hint" style="margin-bottom: 18px; margin-top: 0; border: none; background: none; padding: 0;">Sign in to manage lab equipment</p>
         <form id="loginForm" class="form-grid">
             <label>
                 Username
@@ -27,19 +29,19 @@
                 Password
                 <input name="password" type="password" value="admin123" required>
             </label>
-            <button type="submit">Login</button>
+            <button type="submit"><i class="icon-log-in"></i> Login</button>
         </form>
         <p class="hint">Demo accounts: admin/admin123, teacher/teacher123, student1/student123, tech/tech123</p>
     </section>
 
     <section id="appView" class="app-view hidden">
         <nav class="tabs">
-            <button class="tab active" data-tab="equipment">Equipment</button>
-            <button class="tab" data-tab="reservations">Reservations</button>
-            <button class="tab" data-tab="maintenance">Maintenance</button>
-            <button class="tab" data-tab="inventory">Inventory</button>
-            <button class="tab" data-tab="reports">Reports</button>
-            <button id="logoutButton" class="logout" type="button">Logout</button>
+            <button class="tab active" data-tab="equipment"><i class="icon-cpu"></i> Equipment</button>
+            <button class="tab" data-tab="reservations"><i class="icon-calendar-check"></i> Reservations</button>
+            <button class="tab" data-tab="maintenance"><i class="icon-wrench"></i> Maintenance</button>
+            <button class="tab" data-tab="inventory"><i class="icon-package"></i> Inventory</button>
+            <button class="tab" data-tab="reports"><i class="icon-bar-chart"></i> Reports</button>
+            <button id="logoutButton" class="logout tab" type="button"><i class="icon-log-out"></i> Logout</button>
         </nav>
 
         <section id="equipment" class="tab-page active">
@@ -50,8 +52,8 @@
                 </div>
                 <form id="equipmentSearch" class="inline-form">
                     <input name="q" placeholder="asset tag, name, category">
-                    <button type="submit">Search</button>
-                    <button type="button" id="resetEquipmentSearch">Reset</button>
+                    <button type="submit"><i class="icon-search"></i> Search</button>
+                    <button type="button" id="resetEquipmentSearch" class="secondary"><i class="icon-rotate-ccw"></i> Reset</button>
                 </form>
             </div>
             <div class="table-wrap">
@@ -80,7 +82,7 @@
                     <h2>Reservations</h2>
                     <p>Create requests and approve pending bookings.</p>
                 </div>
-                <button type="button" id="refreshReservations">Refresh</button>
+                <button type="button" id="refreshReservations" class="secondary"><i class="icon-refresh-cw"></i> Refresh</button>
             </div>
             <form id="reservationForm" class="card-form">
                 <h3>New Reservation Request</h3>
@@ -89,7 +91,7 @@
                 <label>Start Time <input name="startTime" value="2026-05-08 10:00" required></label>
                 <label>End Time <input name="endTime" value="2026-05-08 12:00" required></label>
                 <label class="wide">Purpose <input name="purpose" placeholder="Short reason for using this equipment" required></label>
-                <button type="submit">Submit Request</button>
+                <button type="submit"><i class="icon-send"></i> Submit Request</button>
             </form>
             <div class="table-wrap">
                 <table>
@@ -117,7 +119,7 @@
                     <h2>Maintenance Tickets</h2>
                     <p>Track broken equipment and repair progress.</p>
                 </div>
-                <button type="button" id="refreshMaintenance">Refresh</button>
+                <button type="button" id="refreshMaintenance" class="secondary"><i class="icon-refresh-cw"></i> Refresh</button>
             </div>
             <div class="table-wrap">
                 <table>
@@ -146,7 +148,7 @@
                     <h2>Consumable Inventory</h2>
                     <p>Manage stock and record every stock movement.</p>
                 </div>
-                <button type="button" id="refreshInventory">Refresh</button>
+                <button type="button" id="refreshInventory" class="secondary"><i class="icon-refresh-cw"></i> Refresh</button>
             </div>
             <div class="table-wrap">
                 <table>
@@ -173,7 +175,7 @@
                     <h2>Reports</h2>
                     <p>Simple management reports based on SQL views and aggregation.</p>
                 </div>
-                <button type="button" id="refreshReports">Refresh</button>
+                <button type="button" id="refreshReports" class="secondary"><i class="icon-refresh-cw"></i> Refresh</button>
             </div>
             <div class="report-grid">
                 <div>
@@ -208,7 +210,7 @@
         <h3 id="modalTitle"></h3>
         <div id="modalBody"></div>
         <div class="dialog-actions">
-            <button type="button" id="modalCancel">Cancel</button>
+            <button type="button" id="modalCancel" class="secondary">Cancel</button>
             <button type="submit" id="modalSubmit">Save</button>
         </div>
     </form>

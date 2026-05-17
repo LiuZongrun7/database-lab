@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.tab').forEach(button => {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
+
 });
+
 
 async function login(event) {
     event.preventDefault();
@@ -33,7 +35,7 @@ async function login(event) {
     currentUser = result;
     $('loginView').classList.add('hidden');
     $('appView').classList.remove('hidden');
-    $('userBadge').textContent = `${result.fullName} (${result.role})`;
+    $('userBadge').innerHTML = `<i class="icon-user"></i> ${escapeHtml(result.fullName)} (${escapeHtml(result.role)})`;
     await loadAll();
 }
 
@@ -41,7 +43,7 @@ function logout() {
     currentUser = null;
     $('loginView').classList.remove('hidden');
     $('appView').classList.add('hidden');
-    $('userBadge').textContent = 'Not logged in';
+    $('userBadge').innerHTML = '<i class="icon-user"></i> Not logged in';
 }
 
 async function loadAll() {
@@ -80,7 +82,7 @@ async function loadEquipment(q = '') {
             <td>${badge(e.status)}</td>
             <td>${escapeHtml(e.riskLevel)}</td>
             <td>${e.openTicketCount}</td>
-            <td><button type="button" onclick="openReportProblem(${e.id})">Report</button></td>
+            <td><button type="button" onclick="openReportProblem(${e.id})"><i class="icon-alert-triangle"></i> Report</button></td>
         </tr>
     `);
     fillEquipmentSelect();
@@ -137,11 +139,11 @@ async function loadReservations() {
 function reservationActions(row, canDecide) {
     const buttons = [];
     if (canDecide && row.status === 'PENDING') {
-        buttons.push(`<button type="button" onclick="decideReservation(${row.id}, true)">Approve</button>`);
-        buttons.push(`<button type="button" class="danger" onclick="decideReservation(${row.id}, false)">Reject</button>`);
+        buttons.push(`<button type="button" onclick="decideReservation(${row.id}, true)"><i class="icon-check"></i> Approve</button>`);
+        buttons.push(`<button type="button" class="danger" onclick="decideReservation(${row.id}, false)"><i class="icon-x"></i> Reject</button>`);
     }
     if (row.status === 'PENDING' || row.status === 'APPROVED') {
-        buttons.push(`<button type="button" class="secondary" onclick="cancelReservation(${row.id})">Cancel</button>`);
+        buttons.push(`<button type="button" class="secondary" onclick="cancelReservation(${row.id})"><i class="icon-x-circle"></i> Cancel</button>`);
     }
     return buttons.join(' ');
 }
@@ -204,7 +206,7 @@ async function loadMaintenance() {
             <td>${escapeHtml(t.priority)}</td>
             <td>${badge(t.status)}</td>
             <td>${escapeHtml(t.reportedAt)}</td>
-            <td>${canUpdate ? `<button type="button" onclick="openUpdateTicket(${t.id})">Update</button>` : ''}</td>
+            <td>${canUpdate ? `<button type="button" onclick="openUpdateTicket(${t.id})"><i class="icon-edit"></i> Update</button>` : ''}</td>
         </tr>
     `);
 }
@@ -244,8 +246,8 @@ async function loadInventory() {
             <td>${escapeHtml(item.unit)}</td>
             <td>${item.quantity}</td>
             <td>${item.reorderLevel}</td>
-            <td>${item.lowStock ? badge('LOW') : 'No'}</td>
-            <td>${canChange ? `<button type="button" onclick="openChangeStock(${item.id})">Change</button>` : ''}</td>
+            <td>${item.lowStock ? badge('LOW') : '<span style="color: var(--text-muted);">OK</span>'}</td>
+            <td>${canChange ? `<button type="button" onclick="openChangeStock(${item.id})"><i class="icon-plus-minus"></i> Change</button>` : ''}</td>
         </tr>
     `);
 }
@@ -327,12 +329,19 @@ function badge(text) {
     return `<span class="status ${escapeHtml(String(text))}">${escapeHtml(String(text))}</span>`;
 }
 
+let toastTimer = null;
 function showToast(message, isError = false) {
     const toast = $('toast');
     toast.textContent = message;
-    toast.classList.toggle('error', isError);
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 2800);
+    toast.className = 'toast' + (isError ? ' error' : '');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+            toast.classList.remove('hiding');
+        }, 300);
+    }, 2800);
 }
 
 function escapeHtml(value) {
