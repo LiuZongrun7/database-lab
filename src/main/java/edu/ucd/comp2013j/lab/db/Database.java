@@ -47,6 +47,7 @@ public class Database {
     }
 
     public void init() {
+        // The coursework demo starts from a clean schema so every run has predictable data.
         if (createDatabase) {
             createDatabaseIfNeeded();
         }
@@ -94,6 +95,7 @@ public class Database {
     }
 
     private void runScript(Connection connection, String resourcePath) throws IOException, SQLException {
+        // schema.sql and seed.sql are kept as normal SQL files so Member B can explain them.
         for (String sql : loadStatements(resourcePath)) {
             try (Statement statement = connection.createStatement()) {
                 statement.execute(sql);

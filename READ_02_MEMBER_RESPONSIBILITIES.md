@@ -8,7 +8,8 @@ Main responsibility:
 
 - project setup and integration;
 - web server startup and login flow;
-- reservation request workflow;
+- reservation request workflow, including selecting multiple equipment items;
+- consumable needs submitted with a reservation;
 - approval/rejection workflow;
 - run instructions and demo coordination.
 
@@ -28,7 +29,9 @@ Must be able to explain:
 
 - how to run the project;
 - how a reservation request is created;
-- how overlapping time is checked;
+- why `reservation_equipment` is needed for multi-equipment bookings;
+- how overlapping time is checked for each selected equipment item;
+- how reservation consumable requests are stored;
 - why transaction and `FOR UPDATE` are used.
 
 ## Member B - Database Design
@@ -38,6 +41,8 @@ Main responsibility:
 - ER model;
 - relational schema;
 - SQL constraints;
+- many-to-many link tables;
+- reservation consumable request table;
 - views and indexes;
 - seed data;
 - database design part of report.
@@ -57,6 +62,7 @@ Must be able to explain:
 - many-to-many relationships;
 - primary keys and foreign keys;
 - constraints and views;
+- why `reservation_equipment` and `reservation_consumables` are separate tables;
 - why approvals and stock transactions are separate tables.
 
 ## Member C - Equipment and Maintenance
@@ -65,6 +71,8 @@ Main responsibility:
 
 - equipment catalogue;
 - equipment search;
+- admin equipment create/edit;
+- equipment retirement instead of physical delete;
 - maintenance ticket creation;
 - ticket assignment/update;
 - equipment status changes.
@@ -81,6 +89,7 @@ Files to read:
 Must be able to explain:
 
 - what happens when equipment is reported broken;
+- why retired equipment is kept for historical reservations and tickets;
 - why the equipment status changes to `MAINTENANCE`;
 - how a technician resolves a ticket;
 - why ticket updates are stored separately.
@@ -90,6 +99,7 @@ Must be able to explain:
 Main responsibility:
 
 - consumable inventory;
+- creating a new consumable item type;
 - stock transaction history;
 - negative stock prevention;
 - report queries and report UI.
@@ -106,6 +116,7 @@ Files to read:
 Must be able to explain:
 
 - why there is a `stock_transactions` table;
+- the difference between adding a consumable type and changing stock;
 - how negative stock is prevented;
 - what reports are shown;
 - how SQL aggregation is used.
@@ -116,6 +127,9 @@ Main responsibility:
 
 - HTML/CSS/JavaScript front-end;
 - web page layout and browser interactions;
+- role-based navigation;
+- student self-registration;
+- collapsed equipment picker and selected equipment summary;
 - model classes;
 - login support;
 - automated tests;
@@ -140,6 +154,8 @@ Must be able to explain:
 
 - why the front-end is a web page;
 - how JavaScript calls Java API endpoints;
+- why different roles see different tabs;
+- why self-registration only creates student accounts;
 - why model classes are used;
 - what automated tests cover;
 - what screenshots are needed for the report.

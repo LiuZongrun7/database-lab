@@ -4,23 +4,26 @@ import java.time.LocalDateTime;
 
 public class Reservation {
     private final int id;
-    private final String assetTag;
-    private final String equipmentName;
+    private final String assetTags;
+    private final String equipmentNames;
     private final String requesterName;
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
     private final String purpose;
+    private final String consumableNeeds;
     private final String status;
 
-    public Reservation(int id, String assetTag, String equipmentName, String requesterName,
-                       LocalDateTime startTime, LocalDateTime endTime, String purpose, String status) {
+    public Reservation(int id, String assetTags, String equipmentNames, String requesterName,
+                       LocalDateTime startTime, LocalDateTime endTime, String purpose,
+                       String consumableNeeds, String status) {
         this.id = id;
-        this.assetTag = assetTag;
-        this.equipmentName = equipmentName;
+        this.assetTags = assetTags;
+        this.equipmentNames = equipmentNames;
         this.requesterName = requesterName;
         this.startTime = startTime;
         this.endTime = endTime;
         this.purpose = purpose;
+        this.consumableNeeds = consumableNeeds;
         this.status = status;
     }
 
@@ -29,11 +32,11 @@ public class Reservation {
     }
 
     public String getAssetTag() {
-        return assetTag;
+        return assetTags;
     }
 
     public String getEquipmentName() {
-        return equipmentName;
+        return equipmentNames;
     }
 
     public String getRequesterName() {
@@ -50,6 +53,10 @@ public class Reservation {
 
     public String getPurpose() {
         return purpose;
+    }
+
+    public String getConsumableNeeds() {
+        return consumableNeeds;
     }
 
     public String getStatus() {

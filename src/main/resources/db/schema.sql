@@ -3,10 +3,12 @@ DROP VIEW IF EXISTS v_lab_usage_report;
 DROP VIEW IF EXISTS v_user_reservation_history;
 
 DROP TABLE IF EXISTS stock_transactions;
+DROP TABLE IF EXISTS reservation_consumables;
 DROP TABLE IF EXISTS consumables;
 DROP TABLE IF EXISTS maintenance_updates;
 DROP TABLE IF EXISTS maintenance_tickets;
 DROP TABLE IF EXISTS approvals;
+DROP TABLE IF EXISTS reservation_equipment;
 DROP TABLE IF EXISTS reservations;
 DROP TABLE IF EXISTS equipment_course_access;
 DROP TABLE IF EXISTS course_members;
@@ -15,6 +17,7 @@ DROP TABLE IF EXISTS equipment;
 DROP TABLE IF EXISTS labs;
 DROP TABLE IF EXISTS users;
 
+-- Users cover four real system roles. Self-registration only creates STUDENT rows.
 CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(40) NOT NULL UNIQUE,
@@ -26,6 +29,7 @@ CREATE TABLE users (
     active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+-- Labs are separate from equipment so reports can group by lab.
 CREATE TABLE labs (
     lab_id INT AUTO_INCREMENT PRIMARY KEY,
     lab_code VARCHAR(20) NOT NULL UNIQUE,
@@ -37,6 +41,7 @@ CREATE TABLE labs (
     CONSTRAINT fk_lab_manager FOREIGN KEY (manager_id) REFERENCES users(user_id)
 );
 
+-- Equipment is kept even after retirement so historical reservations and tickets stay valid.
 CREATE TABLE equipment (
     equipment_id INT AUTO_INCREMENT PRIMARY KEY,
     asset_tag VARCHAR(30) NOT NULL UNIQUE,
@@ -50,6 +55,7 @@ CREATE TABLE equipment (
     CONSTRAINT fk_equipment_lab FOREIGN KEY (lab_id) REFERENCES labs(lab_id)
 );
 
+-- Courses and course_members show a many-to-many relationship from the database lectures.
 CREATE TABLE courses (
     course_id INT AUTO_INCREMENT PRIMARY KEY,
     course_code VARCHAR(20) NOT NULL UNIQUE,
@@ -77,7 +83,6 @@ CREATE TABLE equipment_course_access (
 
 CREATE TABLE reservations (
     reservation_id INT AUTO_INCREMENT PRIMARY KEY,
-    equipment_id INT NOT NULL,
     requester_id INT NOT NULL,
     course_id INT,
     start_time TIMESTAMP NOT NULL,
@@ -86,11 +91,20 @@ CREATE TABLE reservations (
     status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED', 'NO_SHOW')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_reservation_time CHECK (end_time > start_time),
-    CONSTRAINT fk_res_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id),
     CONSTRAINT fk_res_requester FOREIGN KEY (requester_id) REFERENCES users(user_id),
     CONSTRAINT fk_res_course FOREIGN KEY (course_id) REFERENCES courses(course_id)
 );
 
+-- A reservation can include several equipment items, so this is a link table.
+CREATE TABLE reservation_equipment (
+    reservation_id INT NOT NULL,
+    equipment_id INT NOT NULL,
+    PRIMARY KEY (reservation_id, equipment_id),
+    CONSTRAINT fk_re_reservation FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE CASCADE,
+    CONSTRAINT fk_re_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id)
+);
+
+-- Approval history is separate from the current reservation status.
 CREATE TABLE approvals (
     approval_id INT AUTO_INCREMENT PRIMARY KEY,
     reservation_id INT NOT NULL,
@@ -102,6 +116,7 @@ CREATE TABLE approvals (
     CONSTRAINT fk_approval_user FOREIGN KEY (approver_id) REFERENCES users(user_id)
 );
 
+-- Maintenance tickets track the fault; maintenance_updates keeps later progress notes.
 CREATE TABLE maintenance_tickets (
     ticket_id INT AUTO_INCREMENT PRIMARY KEY,
     equipment_id INT NOT NULL,
@@ -128,6 +143,7 @@ CREATE TABLE maintenance_updates (
     CONSTRAINT fk_update_user FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
+-- consumables stores current stock, while stock_transactions stores the history.
 CREATE TABLE consumables (
     consumable_id INT AUTO_INCREMENT PRIMARY KEY,
     lab_id INT NOT NULL,
@@ -137,6 +153,16 @@ CREATE TABLE consumables (
     reorder_level INT NOT NULL CHECK (reorder_level >= 0),
     CONSTRAINT uq_consumable_lab_item UNIQUE (lab_id, item_name),
     CONSTRAINT fk_consumable_lab FOREIGN KEY (lab_id) REFERENCES labs(lab_id)
+);
+
+-- These are requested consumables for a reservation. They do not directly change stock.
+CREATE TABLE reservation_consumables (
+    reservation_id INT NOT NULL,
+    consumable_id INT NOT NULL,
+    requested_quantity INT NOT NULL CHECK (requested_quantity > 0),
+    PRIMARY KEY (reservation_id, consumable_id),
+    CONSTRAINT fk_rc_reservation FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rc_consumable FOREIGN KEY (consumable_id) REFERENCES consumables(consumable_id)
 );
 
 CREATE TABLE stock_transactions (
@@ -150,19 +176,24 @@ CREATE TABLE stock_transactions (
     CONSTRAINT fk_stock_user FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-CREATE INDEX idx_reservation_equipment_time ON reservations(equipment_id, start_time, end_time);
+CREATE INDEX idx_reservation_time ON reservations(start_time, end_time);
+CREATE INDEX idx_reservation_equipment_equipment ON reservation_equipment(equipment_id);
 CREATE INDEX idx_reservation_status ON reservations(status);
 CREATE INDEX idx_ticket_status ON maintenance_tickets(status);
 CREATE INDEX idx_equipment_status ON equipment(status);
 
+-- View for the equipment page: equipment + lab + number of open repair tickets.
 CREATE VIEW v_equipment_status AS
 SELECT
     e.equipment_id,
     e.asset_tag,
     e.equipment_name,
     e.category,
+    e.lab_id,
     e.status,
+    e.purchase_date,
     e.risk_level,
+    e.notes,
     l.lab_code,
     l.lab_name,
     COALESCE(open_tickets.open_count, 0) AS open_ticket_count
@@ -175,29 +206,38 @@ LEFT JOIN (
     GROUP BY equipment_id
 ) open_tickets ON e.equipment_id = open_tickets.equipment_id;
 
+-- View for reservation history: one row per reservation, with equipment and consumables combined.
 CREATE VIEW v_user_reservation_history AS
 SELECT
     r.reservation_id,
+    r.requester_id,
     u.full_name,
     u.role,
-    e.asset_tag,
-    e.equipment_name,
+    GROUP_CONCAT(DISTINCT e.asset_tag ORDER BY e.asset_tag SEPARATOR ', ') AS asset_tags,
+    GROUP_CONCAT(DISTINCT e.equipment_name ORDER BY e.equipment_name SEPARATOR ', ') AS equipment_names,
     r.start_time,
     r.end_time,
     r.status,
-    r.purpose
+    r.purpose,
+    COALESCE(GROUP_CONCAT(DISTINCT CONCAT(c.item_name, ' x', rc.requested_quantity) ORDER BY c.item_name SEPARATOR ', '), '') AS consumable_needs
 FROM reservations r
 JOIN users u ON r.requester_id = u.user_id
-JOIN equipment e ON r.equipment_id = e.equipment_id;
+JOIN reservation_equipment re ON r.reservation_id = re.reservation_id
+JOIN equipment e ON re.equipment_id = e.equipment_id
+LEFT JOIN reservation_consumables rc ON r.reservation_id = rc.reservation_id
+LEFT JOIN consumables c ON rc.consumable_id = c.consumable_id
+GROUP BY r.reservation_id, r.requester_id, u.full_name, u.role, r.start_time, r.end_time, r.status, r.purpose;
 
+-- View for reports: lab usage is counted through the reservation_equipment link table.
 CREATE VIEW v_lab_usage_report AS
 SELECT
     l.lab_code,
     l.lab_name,
-    COUNT(r.reservation_id) AS reservation_count,
-    SUM(CASE WHEN r.status = 'APPROVED' THEN 1 ELSE 0 END) AS approved_count,
-    SUM(CASE WHEN r.status = 'COMPLETED' THEN 1 ELSE 0 END) AS completed_count
+    COUNT(DISTINCT r.reservation_id) AS reservation_count,
+    COUNT(DISTINCT CASE WHEN r.status = 'APPROVED' THEN r.reservation_id END) AS approved_count,
+    COUNT(DISTINCT CASE WHEN r.status = 'COMPLETED' THEN r.reservation_id END) AS completed_count
 FROM labs l
 LEFT JOIN equipment e ON l.lab_id = e.lab_id
-LEFT JOIN reservations r ON e.equipment_id = r.equipment_id
+LEFT JOIN reservation_equipment re ON e.equipment_id = re.equipment_id
+LEFT JOIN reservations r ON re.reservation_id = r.reservation_id
 GROUP BY l.lab_code, l.lab_name;

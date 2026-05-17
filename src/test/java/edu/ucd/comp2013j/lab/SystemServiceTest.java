@@ -8,6 +8,7 @@ import edu.ucd.comp2013j.lab.db.Database;
 import edu.ucd.comp2013j.lab.model.Consumable;
 import edu.ucd.comp2013j.lab.model.Equipment;
 import edu.ucd.comp2013j.lab.model.User;
+import edu.ucd.comp2013j.lab.service.AuthService;
 import edu.ucd.comp2013j.lab.service.InventoryService;
 import edu.ucd.comp2013j.lab.service.MaintenanceService;
 import edu.ucd.comp2013j.lab.service.ReservationService;
@@ -16,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,8 +37,10 @@ class SystemServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Each test starts with fresh schema and seed data, so tests do not depend on run order.
         database = new Database(
-                "jdbc:mysql://localhost:3306/lab_equipment_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
+                System.getenv().getOrDefault("DB_TEST_URL",
+                        "jdbc:mysql://localhost:3306/lab_equipment_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai"),
                 System.getenv().getOrDefault("DB_USER", "root"),
                 System.getenv("DB_PASSWORD"),
                 true
@@ -57,13 +62,25 @@ class SystemServiceTest {
     }
 
     @Test
+    void studentRegistrationCreatesLoginAccount() {
+        AuthService authService = new AuthService(userDao);
+
+        User user = authService.registerStudent("newstudent", "newpass123",
+                "New Student", "new.student@student.edu");
+
+        assertEquals("STUDENT", user.getRole());
+        assertTrue(userDao.login("newstudent", "newpass123").isPresent());
+    }
+
+    @Test
     void reservationConflictIsRejected() {
         User student = userDao.login("student1", "student123").orElseThrow();
-        LocalDateTime start = LocalDateTime.of(2026, 5, 4, 11, 0);
-        LocalDateTime end = LocalDateTime.of(2026, 5, 4, 12, 30);
+        LocalDateTime start = LocalDateTime.of(2026, 5, 20, 11, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 5, 20, 12, 30);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> reservationService.requestReservation(3, student.getId(), 1, start, end, "Overlapping test"));
+                () -> reservationService.requestReservation(List.of(3), student.getId(), 1, start, end,
+                        "Overlapping test", Map.of()));
 
         assertTrue(ex.getMessage().contains("already booked"));
     }
@@ -93,6 +110,18 @@ class SystemServiceTest {
     }
 
     @Test
+    void adminCanAddConsumableType() {
+        int newId = inventoryService.addConsumable(1, "USB-C cable", "piece", 5, 2);
+
+        Consumable created = inventoryDao.findAll().stream()
+                .filter(c -> c.getId() == newId)
+                .findFirst()
+                .orElseThrow();
+        assertEquals("USB-C cable", created.getItemName());
+        assertEquals(5, created.getQuantity());
+    }
+
+    @Test
     void maintenanceReportMovesEquipmentToMaintenance() {
         User student = userDao.login("student1", "student123").orElseThrow();
         Equipment equipment = equipmentDao.findAll().stream()
@@ -109,5 +138,34 @@ class SystemServiceTest {
                 .orElseThrow()
                 .getStatus();
         assertEquals("MAINTENANCE", newStatus);
+    }
+
+    @Test
+    void equipmentStaysInMaintenanceUntilAllTicketsAreFinished() {
+        User admin = userDao.login("admin", "admin123").orElseThrow();
+        Equipment equipment = equipmentDao.findAll().stream()
+                .filter(e -> e.getAssetTag().equals("NET-SW-006"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("MAINTENANCE", equipment.getStatus());
+
+        int newTicket = maintenanceService.reportProblem(equipment.getId(), admin.getId(),
+                "Second switch issue", "Another fault is still being checked.", "MEDIUM");
+
+        maintenanceService.updateTicket(newTicket, admin.getId(), "CLOSED", admin.getId(), "Second issue closed.");
+        String statusWithSeedTicketStillOpen = equipmentDao.findAll().stream()
+                .filter(e -> e.getId() == equipment.getId())
+                .findFirst()
+                .orElseThrow()
+                .getStatus();
+        assertEquals("MAINTENANCE", statusWithSeedTicketStillOpen);
+
+        maintenanceService.updateTicket(2, admin.getId(), "CLOSED", admin.getId(), "Original switch ticket closed.");
+        String statusAfterAllTicketsClosed = equipmentDao.findAll().stream()
+                .filter(e -> e.getId() == equipment.getId())
+                .findFirst()
+                .orElseThrow()
+                .getStatus();
+        assertEquals("AVAILABLE", statusAfterAllTicketsClosed);
     }
 }

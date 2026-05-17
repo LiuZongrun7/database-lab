@@ -29,7 +29,15 @@ public class FormData {
     }
 
     public int getInt(String key) {
-        return Integer.parseInt(get(key));
+        String value = get(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Required field is missing: " + key);
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Field must be a number: " + key);
+        }
     }
 
     public Integer getOptionalInt(String key) {
@@ -37,7 +45,11 @@ public class FormData {
         if (value == null || value.isBlank()) {
             return null;
         }
-        return Integer.parseInt(value);
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Field must be a number: " + key);
+        }
     }
 
     private static Map<String, String> parse(String body) {

@@ -6,7 +6,22 @@ import edu.ucd.comp2013j.lab.web.LabWebServer;
 public class App {
     public static void main(String[] args) {
         Database database = new Database();
-        database.init();
-        new LabWebServer(database, 8080).start();
+        if (shouldInitializeDatabase()) {
+            database.init();
+        }
+        new LabWebServer(database, port()).start();
+    }
+
+    private static int port() {
+        String value = System.getenv("APP_PORT");
+        if (value == null || value.isBlank()) {
+            return 8080;
+        }
+        return Integer.parseInt(value);
+    }
+
+    private static boolean shouldInitializeDatabase() {
+        String value = System.getenv("DB_INIT_MODE");
+        return value == null || value.isBlank() || !"none".equalsIgnoreCase(value);
     }
 }

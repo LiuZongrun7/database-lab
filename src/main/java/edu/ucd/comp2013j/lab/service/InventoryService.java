@@ -45,4 +45,21 @@ public class InventoryService {
             throw Db.fail(ex);
         }
     }
+
+    public int addConsumable(int labId, String itemName, String unit, int quantity, int reorderLevel) {
+        if (itemName == null || itemName.isBlank()) {
+            throw new IllegalArgumentException("Consumable item is required");
+        }
+        if (unit == null || unit.isBlank()) {
+            throw new IllegalArgumentException("Unit is required");
+        }
+        if (quantity < 0) {
+            throw new IllegalArgumentException("Quantity cannot be negative");
+        }
+        if (reorderLevel < 0) {
+            throw new IllegalArgumentException("Reorder level cannot be negative");
+        }
+        // Creating an item type is separate from later stock movement records.
+        return inventoryDao.create(labId, itemName.trim(), unit.trim(), quantity, reorderLevel);
+    }
 }

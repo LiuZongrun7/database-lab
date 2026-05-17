@@ -2,7 +2,7 @@
 
 ## Your Claimed Area
 
-Project integration, Maven setup, login/main frame integration, and reservation workflow.
+Project integration, Maven setup, login/main frame integration, reservation workflow, and reservation consumable requests.
 
 ## Files You Should Understand
 
@@ -21,11 +21,13 @@ The most important part is the reservation transaction. In `ReservationService.r
 
 1. validates that the end time is after the start time;
 2. starts a database transaction;
-3. locks the selected equipment row with `FOR UPDATE`;
-4. checks whether the equipment status allows booking;
-5. checks whether another pending or approved reservation overlaps the requested time;
+3. locks each selected equipment row with `FOR UPDATE`;
+4. checks whether each equipment status allows booking;
+5. checks whether another pending or approved reservation overlaps the requested time for any selected equipment item;
 6. inserts a new reservation with `PENDING` status;
-7. commits if everything is valid, otherwise rolls back.
+7. inserts rows into `reservation_equipment`;
+8. inserts optional consumable needs into `reservation_consumables`;
+9. commits if everything is valid, otherwise rolls back.
 
 The overlap condition is:
 
@@ -38,6 +40,8 @@ This catches partial overlap, full overlap, and surrounding overlap.
 - Run `mvn test`.
 - Run `DB_PASSWORD='your_mysql_root_password' mvn exec:java`.
 - Create one valid reservation as `student1`.
+- Select more than one equipment item in one reservation.
+- Add one consumable request to the reservation.
 - Try to create one conflicting reservation and confirm it is rejected.
 - Login as `teacher` and approve a pending reservation.
 - Take screenshots for the report.
@@ -51,6 +55,14 @@ A: Because checking availability and inserting the reservation must happen as on
 Q: Why is the reservation first set to `PENDING`?
 
 A: Some equipment can be high-risk or shared between courses, so a teacher or admin should approve it before use.
+
+Q: Why is there a `reservation_equipment` table?
+
+A: One reservation can include several equipment items. A link table is clearer than a single `equipment_id` column.
+
+Q: Does a consumable request immediately reduce stock?
+
+A: No. The reservation stores requested consumables. Real stock changes are still done through the inventory workflow by admin or technician.
 
 Q: Why not use an ORM?
 

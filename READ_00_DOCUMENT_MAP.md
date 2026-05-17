@@ -24,6 +24,8 @@ Chinese versions are also provided for easier team reading:
 | `READ_CN_03_答辩问答.md` | Chinese viva Q&A. |
 | `READ_CN_04_Web前端说明.md` | Chinese web front-end guide. |
 | `READ_CN_05_提交和报告指南.md` | Chinese submission and report guide. |
+| `READ_CN_06_代码阅读与注释指南.md` | Chinese code-reading and comment guide for each member. |
+| `READ_CN_07_服务器部署指南.md` | Chinese server deployment guide for a deployment agent. |
 
 ## Main Coursework Documents
 

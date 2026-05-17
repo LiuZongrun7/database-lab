@@ -24,6 +24,7 @@ public class CourseDao {
         if (user.isAdmin()) {
             sql = "SELECT course_id, course_code, course_name FROM courses ORDER BY course_code";
         } else {
+            // Non-admin users only see courses where they are listed in course_members.
             sql = """
                     SELECT c.course_id, c.course_code, c.course_name
                     FROM courses c

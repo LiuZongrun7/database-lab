@@ -16,7 +16,7 @@ INSERT INTO equipment (asset_tag, equipment_name, category, lab_id, status, purc
 ('BIO-OSC-003', 'Digital Oscilloscope', 'Measurement', 2, 'AVAILABLE', '2022-04-15', 'LOW', 'Shared electronic measuring device'),
 ('BIO-ECG-004', 'ECG Sensor Kit', 'Sensor', 2, 'MAINTENANCE', '2021-06-20', 'MEDIUM', 'Loose cable reported'),
 ('NET-IOT-005', 'IoT Gateway Set', 'Network', 3, 'AVAILABLE', '2024-01-18', 'LOW', 'Raspberry Pi and gateway kit'),
-('NET-SW-006', 'Managed Switch Rack', 'Network', 3, 'AVAILABLE', '2022-10-01', 'MEDIUM', 'Used in network configuration exercises');
+('NET-SW-006', 'Managed Switch Rack', 'Network', 3, 'MAINTENANCE', '2022-10-01', 'MEDIUM', 'Used in network configuration exercises');
 
 INSERT INTO courses (course_code, course_name, teacher_id) VALUES
 ('COMP2013J', 'Databases and Information Systems', 2),
@@ -36,10 +36,17 @@ INSERT INTO equipment_course_access (equipment_id, course_id) VALUES
 (5, 1),
 (6, 1);
 
-INSERT INTO reservations (equipment_id, requester_id, course_id, start_time, end_time, purpose, status) VALUES
-(3, 3, 1, '2026-05-04 10:00:00', '2026-05-04 12:00:00', 'Measure sensor output for lab exercise', 'APPROVED'),
-(5, 4, 1, '2026-05-05 14:00:00', '2026-05-05 16:30:00', 'IoT gateway demo preparation', 'PENDING'),
-(1, 3, 2, '2026-05-06 09:00:00', '2026-05-06 11:00:00', 'Train small image classifier', 'APPROVED');
+INSERT INTO reservations (requester_id, course_id, start_time, end_time, purpose, status) VALUES
+(3, 1, '2026-05-20 10:00:00', '2026-05-20 12:00:00', 'Measure sensor output for lab exercise', 'APPROVED'),
+(4, 1, '2026-05-21 14:00:00', '2026-05-21 16:30:00', 'IoT gateway demo preparation', 'PENDING'),
+(3, 2, '2026-05-22 09:00:00', '2026-05-22 11:00:00', 'Train small image classifier', 'APPROVED');
+
+INSERT INTO reservation_equipment (reservation_id, equipment_id) VALUES
+(1, 3),
+(2, 5),
+(2, 3),
+(3, 1),
+(3, 2);
 
 INSERT INTO approvals (reservation_id, approver_id, decision, comment) VALUES
 (1, 2, 'APPROVED', 'Approved for scheduled lab work'),
@@ -58,6 +65,12 @@ INSERT INTO consumables (lab_id, item_name, unit, quantity, reorder_level) VALUE
 (2, 'ECG electrode pad', 'pack', 8, 5),
 (3, 'Ethernet cable', 'piece', 36, 10),
 (3, 'Micro SD card', 'piece', 12, 4);
+
+INSERT INTO reservation_consumables (reservation_id, consumable_id, requested_quantity) VALUES
+(1, 2, 1),
+(2, 3, 2),
+(2, 4, 1),
+(3, 1, 1);
 
 INSERT INTO stock_transactions (consumable_id, user_id, change_amount, reason) VALUES
 (1, 1, 6, 'Initial stock count'),

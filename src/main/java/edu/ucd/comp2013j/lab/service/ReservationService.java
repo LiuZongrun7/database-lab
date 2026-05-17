@@ -9,6 +9,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class ReservationService {
     private final Database database;
@@ -19,9 +24,11 @@ public class ReservationService {
         this.reservationDao = reservationDao;
     }
 
-    public int requestReservation(int equipmentId, int requesterId, Integer courseId,
-                                  LocalDateTime start, LocalDateTime end, String purpose) {
+    public int requestReservation(List<Integer> equipmentIds, int requesterId, Integer courseId,
+                                  LocalDateTime start, LocalDateTime end, String purpose,
+                                  Map<Integer, Integer> consumableRequests) {
         validateTime(start, end);
+        List<Integer> cleanEquipmentIds = cleanEquipmentIds(equipmentIds);
         if (purpose == null || purpose.isBlank()) {
             throw new IllegalArgumentException("Purpose is required");
         }
@@ -30,11 +37,14 @@ public class ReservationService {
             connection.setAutoCommit(false);
             try {
                 // This transaction is the important part: check availability and insert as one unit.
-                checkEquipmentCanBeReserved(connection, equipmentId);
-                if (reservationDao.hasTimeConflict(connection, equipmentId, start, end, null)) {
-                    throw new IllegalArgumentException("This equipment is already booked in the selected time.");
+                for (int equipmentId : cleanEquipmentIds) {
+                    checkEquipmentCanBeReserved(connection, equipmentId);
+                    if (reservationDao.hasTimeConflict(connection, equipmentId, start, end, null)) {
+                        throw new IllegalArgumentException("One or more selected equipment items are already booked in the selected time.");
+                    }
                 }
-                int id = reservationDao.create(connection, equipmentId, requesterId, courseId, start, end, purpose.trim());
+                int id = reservationDao.create(connection, cleanEquipmentIds, requesterId, courseId, start, end,
+                        purpose.trim(), consumableRequests);
                 connection.commit();
                 return id;
             } catch (RuntimeException | SQLException ex) {
@@ -72,6 +82,22 @@ public class ReservationService {
         if (!end.isAfter(start)) {
             throw new IllegalArgumentException("End time must be after start time");
         }
+    }
+
+    private List<Integer> cleanEquipmentIds(List<Integer> equipmentIds) {
+        if (equipmentIds == null || equipmentIds.isEmpty()) {
+            throw new IllegalArgumentException("At least one equipment item is required");
+        }
+        Set<Integer> unique = new LinkedHashSet<>();
+        for (Integer id : equipmentIds) {
+            if (id != null && id > 0) {
+                unique.add(id);
+            }
+        }
+        if (unique.isEmpty()) {
+            throw new IllegalArgumentException("At least one equipment item is required");
+        }
+        return new ArrayList<>(unique);
     }
 
     private void checkEquipmentCanBeReserved(Connection connection, int equipmentId) throws SQLException {

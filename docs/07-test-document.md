@@ -33,10 +33,12 @@ DB_PASSWORD='your_mysql_root_password' mvn test
 | --- | --- | --- |
 | AT-01 | Login with `admin/admin123` | Login succeeds. |
 | AT-02 | Login with wrong password | Login fails. |
-| AT-03 | Submit reservation overlapping an existing booking | System rejects it with a conflict message. |
-| AT-04 | Decrease stock below zero | System rejects it. |
-| AT-05 | Decrease stock by a valid amount | Quantity is updated by the correct amount. |
-| AT-06 | Report maintenance problem | Equipment status changes to `MAINTENANCE`. |
+| AT-03 | Register a new student account | Account is created and can login. |
+| AT-04 | Submit reservation overlapping an existing booking | System rejects it with a conflict message. |
+| AT-05 | Decrease stock below zero | System rejects it. |
+| AT-06 | Decrease stock by a valid amount | Quantity is updated by the correct amount. |
+| AT-07 | Add a new consumable item type | New consumable row appears in inventory. |
+| AT-08 | Report maintenance problem | Equipment status changes to `MAINTENANCE`. |
 
 ## Manual Test Cases
 
@@ -51,7 +53,19 @@ Expected result:
 - Main window opens.
 - Header shows the logged-in user and role.
 
-### MT-02 Search Equipment
+### MT-02 Register Student
+
+Steps:
+1. Open the login page.
+2. Click Register Student Account.
+3. Fill username, full name, email, and password.
+4. Submit the dialog.
+
+Expected result:
+- The new account is created with role `STUDENT`.
+- The user enters the student workspace.
+
+### MT-03 Search Equipment
 
 Steps:
 1. Open Equipment tab.
@@ -61,20 +75,21 @@ Steps:
 Expected result:
 - The table shows the TurtleBot equipment row.
 
-### MT-03 Create Reservation
+### MT-04 Create Reservation
 
 Steps:
 1. Login as `student1/student123`.
 2. Open Reservations tab.
-3. Click New Request.
-4. Select available equipment.
-5. Enter a future time such as `2026-05-08 10:00` to `2026-05-08 12:00`.
-6. Enter a purpose and submit.
+3. Open the equipment picker.
+4. Select one or more available equipment items.
+5. Optionally add one consumable request.
+6. Enter a future time using the date-time controls.
+7. Enter a purpose and submit.
 
 Expected result:
 - A new reservation appears with status `PENDING`.
 
-### MT-04 Approve Reservation
+### MT-05 Approve Reservation
 
 Steps:
 1. Login as `teacher/teacher123`.
@@ -86,7 +101,7 @@ Expected result:
 - Reservation status changes to `APPROVED`.
 - A record is inserted into `approvals`.
 
-### MT-05 Reject Reservation
+### MT-06 Reject Reservation
 
 Steps:
 1. Login as `teacher/teacher123`.
@@ -96,7 +111,7 @@ Steps:
 Expected result:
 - Reservation status changes to `REJECTED`.
 
-### MT-06 Report Maintenance Problem
+### MT-07 Report Maintenance Problem
 
 Steps:
 1. Login as `student1/student123`.
@@ -109,7 +124,7 @@ Expected result:
 - A maintenance ticket is created.
 - Equipment status changes to `MAINTENANCE`.
 
-### MT-07 Update Maintenance Ticket
+### MT-08 Update Maintenance Ticket
 
 Steps:
 1. Login as `tech/tech123`.
@@ -122,7 +137,18 @@ Expected result:
 - Ticket status changes to `RESOLVED`.
 - Equipment status changes back to `AVAILABLE`.
 
-### MT-08 Change Stock
+### MT-09 Add Consumable Type
+
+Steps:
+1. Login as `admin/admin123`.
+2. Open Inventory tab.
+3. Click Add Consumable.
+4. Fill lab, item name, unit, quantity, and reorder level.
+
+Expected result:
+- A new consumable item appears in the inventory table.
+
+### MT-10 Change Stock
 
 Steps:
 1. Login as `tech/tech123`.
@@ -135,7 +161,7 @@ Expected result:
 - Quantity decreases by one.
 - A row is inserted into `stock_transactions`.
 
-### MT-09 Prevent Negative Stock
+### MT-11 Prevent Negative Stock
 
 Steps:
 1. Open Inventory tab as technician.
@@ -145,7 +171,7 @@ Steps:
 Expected result:
 - System shows an error and keeps the old quantity.
 
-### MT-10 Reports
+### MT-12 Reports
 
 Steps:
 1. Login as admin.

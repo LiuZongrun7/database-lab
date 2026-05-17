@@ -67,9 +67,11 @@ public class MaintenanceDao {
 
     public void assign(Connection connection, int ticketId, Integer technicianId, String status, int userId, String note)
             throws SQLException {
+        // Updating the ticket and inserting an update note keeps an audit trail for the repair.
         String sql = """
                 UPDATE maintenance_tickets
-                SET technician_id = ?, status = ?, resolved_at = CASE WHEN ? = 'RESOLVED' THEN CURRENT_TIMESTAMP ELSE resolved_at END
+                SET technician_id = ?, status = ?,
+                    resolved_at = CASE WHEN ? IN ('RESOLVED', 'CLOSED') THEN CURRENT_TIMESTAMP ELSE resolved_at END
                 WHERE ticket_id = ?
                 """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {

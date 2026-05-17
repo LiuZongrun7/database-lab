@@ -41,10 +41,12 @@ Front-end:
 Back-end API:
 
 - `POST /api/login`
+- `POST /api/register`
 
 Purpose:
 
 - lets users enter username and password;
+- lets new students register through the dialog;
 - returns user id, full name, and role;
 - switches from login page to main dashboard.
 
@@ -59,12 +61,15 @@ Back-end API:
 
 - `GET /api/equipment`
 - `GET /api/equipment?q=keyword`
+- `POST /api/equipment/save`
+- `POST /api/equipment/retire`
 - `POST /api/maintenance/report`
 
 User actions:
 
 - view equipment;
 - search equipment;
+- create/edit/retire equipment if admin;
 - report equipment problem.
 
 ### Reservations Page
@@ -79,6 +84,8 @@ Back-end API:
 User actions:
 
 - create reservation request;
+- select multiple equipment items;
+- add consumable requests;
 - view reservations;
 - approve or reject if teacher/admin;
 - cancel active reservation.
@@ -102,11 +109,13 @@ User actions:
 Back-end API:
 
 - `GET /api/inventory`
+- `POST /api/inventory/add`
 - `POST /api/inventory/change`
 
 User actions:
 
 - view consumable stock;
+- add a new consumable type if admin;
 - change stock;
 - see low-stock flags.
 
@@ -139,7 +148,7 @@ Browser form
 
 ## Report Paragraph Example
 
-The system includes a web front-end implemented with HTML, CSS, and JavaScript. The front-end is served by a lightweight Java HTTP server and communicates with the back-end through JSON-style API endpoints. The main web pages include login, equipment catalogue, reservation management, maintenance tickets, inventory, and reports. This satisfies the assignment's user interface requirement because users can operate the database system through a browser instead of using SQL directly.
+The system includes a web front-end implemented with HTML, CSS, and JavaScript. The front-end is served by a lightweight Java HTTP server and communicates with the back-end through JSON-style API endpoints. The main web pages include login and student registration, equipment catalogue and admin equipment management, reservation management with multi-equipment selection, maintenance tickets, consumable inventory, and reports. This satisfies the assignment's user interface requirement because users can operate the database system through a browser instead of using SQL directly.
 
 ## Screenshots To Put In The Report
 
@@ -149,10 +158,11 @@ Take screenshots of:
 2. Main web dashboard.
 3. Equipment tab.
 4. Reservation form.
-5. Approval buttons.
-6. Maintenance ticket update dialog.
-7. Inventory page.
-8. Reports page.
+5. Multi-equipment picker summary.
+6. Approval buttons.
+7. Maintenance ticket update dialog.
+8. Inventory page with add consumable button.
+9. Reports page.
 
 ## Possible Interview Questions
 

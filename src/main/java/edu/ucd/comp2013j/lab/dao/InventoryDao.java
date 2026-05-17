@@ -8,6 +8,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +51,32 @@ public class InventoryDao {
             }
         }
         throw new SQLException("Consumable not found: " + consumableId);
+    }
+
+    public int create(int labId, String itemName, String unit, int quantity, int reorderLevel) {
+        String sql = """
+                INSERT INTO consumables (lab_id, item_name, unit, quantity, reorder_level)
+                VALUES (?, ?, ?, ?, ?)
+                """;
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, labId);
+            ps.setString(2, itemName);
+            ps.setString(3, unit);
+            ps.setInt(4, quantity);
+            ps.setInt(5, reorderLevel);
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getInt(1);
+                }
+            }
+            throw new SQLException("Consumable id was not generated");
+        } catch (SQLIntegrityConstraintViolationException ex) {
+            throw new IllegalArgumentException("Consumable item already exists in this lab");
+        } catch (SQLException ex) {
+            throw Db.fail(ex);
+        }
     }
 
     public void updateQuantity(Connection connection, int consumableId, int newQuantity) throws SQLException {

@@ -60,17 +60,12 @@ public class MaintenanceService {
             connection.setAutoCommit(false);
             try {
                 maintenanceDao.assign(connection, ticketId, technicianId, status, userId, note.trim());
-                if ("RESOLVED".equals(status) || "CLOSED".equals(status)) {
-                    try (PreparedStatement ps = connection.prepareStatement("""
-                            UPDATE equipment
-                            SET status = 'AVAILABLE'
-                            WHERE equipment_id = (
-                                SELECT equipment_id FROM maintenance_tickets WHERE ticket_id = ?
-                            )
-                            """)) {
-                        ps.setInt(1, ticketId);
-                        ps.executeUpdate();
-                    }
+                int equipmentId = findTicketEquipment(connection, ticketId);
+                if (isActiveTicketStatus(status)) {
+                    setEquipmentStatus(connection, equipmentId, "MAINTENANCE");
+                } else if (isFinishedTicketStatus(status) && !hasActiveTickets(connection, equipmentId)) {
+                    // A device can return to booking only when all its open repair tickets are finished.
+                    setEquipmentStatus(connection, equipmentId, "AVAILABLE");
                 }
                 connection.commit();
             } catch (RuntimeException | SQLException ex) {
@@ -82,5 +77,49 @@ public class MaintenanceService {
         } catch (SQLException ex) {
             throw Db.fail(ex);
         }
+    }
+
+    private int findTicketEquipment(Connection connection, int ticketId) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT equipment_id FROM maintenance_tickets WHERE ticket_id = ?")) {
+            ps.setInt(1, ticketId);
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("equipment_id");
+                }
+            }
+        }
+        throw new IllegalArgumentException("Ticket does not exist");
+    }
+
+    private boolean hasActiveTickets(Connection connection, int equipmentId) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement("""
+                SELECT COUNT(*) AS active_count
+                FROM maintenance_tickets
+                WHERE equipment_id = ? AND status IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS')
+                """)) {
+            ps.setInt(1, equipmentId);
+            try (var rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt("active_count") > 0;
+            }
+        }
+    }
+
+    private void setEquipmentStatus(Connection connection, int equipmentId, String status) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "UPDATE equipment SET status = ? WHERE equipment_id = ? AND status <> 'RETIRED'")) {
+            ps.setString(1, status);
+            ps.setInt(2, equipmentId);
+            ps.executeUpdate();
+        }
+    }
+
+    private boolean isActiveTicketStatus(String status) {
+        return "OPEN".equals(status) || "ASSIGNED".equals(status) || "IN_PROGRESS".equals(status);
+    }
+
+    private boolean isFinishedTicketStatus(String status) {
+        return "RESOLVED".equals(status) || "CLOSED".equals(status);
     }
 }

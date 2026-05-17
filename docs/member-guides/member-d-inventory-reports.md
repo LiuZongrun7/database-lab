@@ -2,7 +2,7 @@
 
 ## Your Claimed Area
 
-Consumable inventory, stock transaction workflow, and management reports.
+Consumable inventory, consumable type creation, stock transaction workflow, and management reports.
 
 ## Files You Should Understand
 
@@ -33,9 +33,12 @@ When stock changes, `InventoryService.changeStock`:
 
 Reports are read-only. `ReportDao.labUsage()` reads from `v_lab_usage_report`. `ReportDao.equipmentStatusSummary()` groups equipment by status.
 
+Adding a consumable type is different from changing stock. Adding creates a new row in `consumables`; changing stock updates an existing row and writes a `stock_transactions` record.
+
 ## Manual Things You Should Do
 
 - Login as `tech`.
+- Login as `admin` and add a new consumable item type.
 - Change a stock item by `-1` and check the new quantity.
 - Try `-999` and confirm the system rejects it.
 - Open Reports tab and explain both tables.
@@ -58,6 +61,10 @@ A: One report counts reservations by lab. Another groups equipment by status and
 Q: What is the purpose of `reorder_level`?
 
 A: It lets the UI mark low stock items when quantity is less than or equal to the reorder level.
+
+Q: Why does a new consumable need a reorder level?
+
+A: The system uses it to decide whether the item should be shown as low stock.
 
 Q: What could be improved?
 

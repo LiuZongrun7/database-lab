@@ -8,6 +8,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +37,32 @@ public class UserDao {
                 }
             }
             return Optional.empty();
+        } catch (SQLException ex) {
+            throw Db.fail(ex);
+        }
+    }
+
+    public User createStudent(String username, String password, String fullName, String email) {
+        // Only student self-registration is allowed from the public login page.
+        String sql = """
+                INSERT INTO users (username, password, full_name, email, role, penalty_points)
+                VALUES (?, ?, ?, ?, 'STUDENT', 0)
+                """;
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, username);
+            ps.setString(2, password);
+            ps.setString(3, fullName);
+            ps.setString(4, email);
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return new User(keys.getInt(1), username, fullName, email, "STUDENT", 0);
+                }
+            }
+            throw new SQLException("User id was not generated");
+        } catch (SQLIntegrityConstraintViolationException ex) {
+            throw new IllegalArgumentException("Username or email already exists");
         } catch (SQLException ex) {
             throw Db.fail(ex);
         }

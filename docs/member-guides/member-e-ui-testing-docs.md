@@ -2,7 +2,7 @@
 
 ## Your Claimed Area
 
-Web front-end, model classes, authentication support, tests, and documentation organisation.
+Web front-end, role-based navigation, student registration, model classes, authentication support, tests, and documentation organisation.
 
 ## Files You Should Understand
 
@@ -31,6 +31,8 @@ The front-end is built with HTML, CSS, and JavaScript:
 
 The Java web server is in `LabWebServer.java`. It serves the static web files and provides API endpoints such as `/api/login`, `/api/equipment`, `/api/reservations/create`, `/api/maintenance/update`, and `/api/inventory/change`.
 
+The current UI also includes student self-registration, role-specific tabs, a collapsed equipment picker with a selected-equipment summary, admin equipment controls, and an admin consumable creation button.
+
 The browser does not directly access the database. The flow is:
 
 ```text
@@ -44,9 +46,11 @@ HTML form / JavaScript
 The automated tests check important behaviour:
 
 - correct and wrong login;
+- student registration;
 - reservation conflict rejection;
 - stock cannot go below zero;
 - valid stock update changes quantity;
+- consumable type creation;
 - reporting maintenance changes equipment status.
 
 ## Manual Things You Should Do
@@ -55,6 +59,9 @@ The automated tests check important behaviour:
 - Run `DB_PASSWORD='your_mysql_root_password' mvn exec:java`.
 - Open `http://localhost:8080`.
 - Test login and all tabs in the browser.
+- Test student registration.
+- Test that different roles see different tabs.
+- Test equipment picker expand/collapse and selected summary.
 - Take screenshots of the major web pages.
 - Check the video script timing with the group.
 - Make sure the AI usage statement is included and honest.
@@ -73,13 +80,17 @@ Q: How does the front-end call the back-end?
 
 A: `app.js` uses `fetch()` to call API endpoints. The Java server handles the request, calls service classes, and the service classes use DAO classes to run SQL.
 
+Q: Why does self-registration only create student accounts?
+
+A: Admin, teacher, and technician accounts have higher permissions. In a real system, those accounts should be created or approved by an administrator.
+
 Q: What is the purpose of the model classes?
 
 A: They store data returned from the database in a readable Java form. This keeps API and service code cleaner than passing raw `ResultSet` objects around.
 
 Q: What tests did you write?
 
-A: Automated tests cover login, reservation conflict, inventory validation, inventory update, and maintenance status update.
+A: Automated tests cover login, student registration, reservation conflict, inventory validation, inventory update, consumable creation, and maintenance status update.
 
 Q: What documentation did you prepare?
 

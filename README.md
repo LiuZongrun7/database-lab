@@ -14,6 +14,8 @@ Team members should read these root-level guides first:
 - `READ_03_VIVA_QA.md`
 - `READ_04_FRONTEND_UI_GUIDE.md`
 - `READ_05_SUBMISSION_AND_REPORT_GUIDE.md`
+- `READ_CN_06_代码阅读与注释指南.md`
+- `READ_CN_07_服务器部署指南.md`
 
 ## Run
 
@@ -38,6 +40,8 @@ Default database settings:
 | Password | read from `DB_PASSWORD` |
 
 You can override the connection with `DB_URL`, `DB_USER`, and `DB_PASSWORD`.
+For server deployment, see `READ_CN_07_服务器部署指南.md`. If `DB_INIT_MODE=none`,
+the app starts without recreating the database.
 
 ## Demo Accounts
 

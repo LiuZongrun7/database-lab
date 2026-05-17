@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,9 +71,14 @@ public class LabWebServer {
     public void start() {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+            // Keeping the routes in one small server avoids a heavy MVC framework for this coursework.
             server.createContext("/", this::handleStatic);
             server.createContext("/api/login", api(this::handleLogin));
+            server.createContext("/api/register", api(this::handleRegister));
+            server.createContext("/api/labs", api(this::handleLabs));
             server.createContext("/api/equipment", api(this::handleEquipment));
+            server.createContext("/api/equipment/save", api(this::handleSaveEquipment));
+            server.createContext("/api/equipment/retire", api(this::handleRetireEquipment));
             server.createContext("/api/courses", api(this::handleCourses));
             server.createContext("/api/users/technicians", api(this::handleTechnicians));
             server.createContext("/api/reservations", api(this::handleReservations));
@@ -83,6 +89,7 @@ public class LabWebServer {
             server.createContext("/api/maintenance/report", api(this::handleReportProblem));
             server.createContext("/api/maintenance/update", api(this::handleUpdateTicket));
             server.createContext("/api/inventory", api(this::handleInventory));
+            server.createContext("/api/inventory/add", api(this::handleAddInventory));
             server.createContext("/api/inventory/change", api(this::handleChangeStock));
             server.createContext("/api/reports/lab-usage", api(this::handleLabUsage));
             server.createContext("/api/reports/equipment-status", api(this::handleEquipmentStatusReport));
@@ -100,17 +107,22 @@ public class LabWebServer {
         FormData form = FormData.from(exchange);
         Optional<User> user = authService.login(form.get("username"), form.get("password"));
         if (user.isPresent()) {
-            User u = user.get();
-            sendJson(exchange, Json.object(Json.row(
-                    "ok", true,
-                    "id", u.getId(),
-                    "username", u.getUsername(),
-                    "fullName", u.getFullName(),
-                    "role", u.getRole()
-            )));
+            sendJson(exchange, userJson(user.get(), null));
         } else {
             sendJson(exchange, Json.error("Invalid username or password"));
         }
+    }
+
+    private void handleRegister(HttpExchange exchange) throws IOException {
+        onlyPost(exchange);
+        FormData form = FormData.from(exchange);
+        User user = authService.registerStudent(
+                form.get("username"),
+                form.get("password"),
+                form.get("fullName"),
+                form.get("email")
+        );
+        sendJson(exchange, userJson(user, "Registration finished."));
     }
 
     private void handleEquipment(HttpExchange exchange) throws IOException {
@@ -124,13 +136,63 @@ public class LabWebServer {
                     "assetTag", e.getAssetTag(),
                     "name", e.getName(),
                     "category", e.getCategory(),
+                    "labId", e.getLabId(),
                     "labCode", e.getLabCode(),
                     "status", e.getStatus(),
+                    "purchaseDate", e.getPurchaseDate(),
                     "riskLevel", e.getRiskLevel(),
+                    "notes", e.getNotes(),
                     "openTicketCount", e.getOpenTicketCount()
             ));
         }
         sendJson(exchange, Json.array(rows));
+    }
+
+    private void handleLabs(HttpExchange exchange) throws IOException {
+        onlyGet(exchange);
+        sendJson(exchange, Json.array(equipmentDao.findLabs()));
+    }
+
+    private void handleSaveEquipment(HttpExchange exchange) throws IOException {
+        onlyPost(exchange);
+        FormData form = FormData.from(exchange);
+        // The front-end hides this button for non-admins, and the API checks again here.
+        requireAdmin(userFromForm(form));
+        Integer equipmentId = form.getOptionalInt("equipmentId");
+        if (equipmentId == null) {
+            int id = equipmentDao.create(
+                    form.get("assetTag"),
+                    form.get("name"),
+                    form.get("category"),
+                    form.getInt("labId"),
+                    form.get("status"),
+                    form.get("purchaseDate"),
+                    form.get("riskLevel"),
+                    form.get("notes")
+            );
+            sendJson(exchange, Json.ok("Equipment #" + id + " saved."));
+        } else {
+            equipmentDao.update(
+                    equipmentId,
+                    form.get("assetTag"),
+                    form.get("name"),
+                    form.get("category"),
+                    form.getInt("labId"),
+                    form.get("status"),
+                    form.get("purchaseDate"),
+                    form.get("riskLevel"),
+                    form.get("notes")
+            );
+            sendJson(exchange, Json.ok("Equipment updated."));
+        }
+    }
+
+    private void handleRetireEquipment(HttpExchange exchange) throws IOException {
+        onlyPost(exchange);
+        FormData form = FormData.from(exchange);
+        requireAdmin(userFromForm(form));
+        equipmentDao.retire(form.getInt("equipmentId"));
+        sendJson(exchange, Json.ok("Equipment retired."));
     }
 
     private void handleCourses(HttpExchange exchange) throws IOException {
@@ -165,7 +227,8 @@ public class LabWebServer {
                     "startTime", r.getStartTime().format(TIME_FORMAT),
                     "endTime", r.getEndTime().format(TIME_FORMAT),
                     "status", r.getStatus(),
-                    "purpose", r.getPurpose()
+                    "purpose", r.getPurpose(),
+                    "consumableNeeds", r.getConsumableNeeds()
             ));
         }
         sendJson(exchange, Json.array(rows));
@@ -175,12 +238,13 @@ public class LabWebServer {
         onlyPost(exchange);
         FormData form = FormData.from(exchange);
         int id = reservationService.requestReservation(
-                form.getInt("equipmentId"),
+                parseIdList(form.get("equipmentIds")),
                 form.getInt("userId"),
                 form.getOptionalInt("courseId"),
                 LocalDateTime.parse(form.get("startTime"), TIME_FORMAT),
                 LocalDateTime.parse(form.get("endTime"), TIME_FORMAT),
-                form.get("purpose")
+                form.get("purpose"),
+                parseConsumableRequests(form.get("consumableRequests"))
         );
         sendJson(exchange, Json.ok("Reservation request #" + id + " submitted."));
     }
@@ -188,9 +252,11 @@ public class LabWebServer {
     private void handleDecideReservation(HttpExchange exchange) throws IOException {
         onlyPost(exchange);
         FormData form = FormData.from(exchange);
+        User user = userFromForm(form);
+        requireTeacherOrAdmin(user);
         reservationService.decideReservation(
                 form.getInt("reservationId"),
-                form.getInt("userId"),
+                user.getId(),
                 Boolean.parseBoolean(form.get("approve")),
                 form.get("comment")
         );
@@ -239,11 +305,13 @@ public class LabWebServer {
     private void handleUpdateTicket(HttpExchange exchange) throws IOException {
         onlyPost(exchange);
         FormData form = FormData.from(exchange);
+        User user = userFromForm(form);
+        requireTechnicianOrAdmin(user);
         maintenanceService.updateTicket(
                 form.getInt("ticketId"),
                 form.getOptionalInt("technicianId"),
                 form.get("status"),
-                form.getInt("userId"),
+                user.getId(),
                 form.get("note")
         );
         sendJson(exchange, Json.ok("Maintenance ticket updated."));
@@ -266,12 +334,28 @@ public class LabWebServer {
         sendJson(exchange, Json.array(rows));
     }
 
+    private void handleAddInventory(HttpExchange exchange) throws IOException {
+        onlyPost(exchange);
+        FormData form = FormData.from(exchange);
+        requireAdmin(userFromForm(form));
+        inventoryService.addConsumable(
+                form.getInt("labId"),
+                form.get("itemName"),
+                form.get("unit"),
+                form.getInt("quantity"),
+                form.getInt("reorderLevel")
+        );
+        sendJson(exchange, Json.ok("Consumable item added."));
+    }
+
     private void handleChangeStock(HttpExchange exchange) throws IOException {
         onlyPost(exchange);
         FormData form = FormData.from(exchange);
+        User user = userFromForm(form);
+        requireTechnicianOrAdmin(user);
         inventoryService.changeStock(
                 form.getInt("consumableId"),
-                form.getInt("userId"),
+                user.getId(),
                 form.getInt("amount"),
                 form.get("reason")
         );
@@ -296,9 +380,85 @@ public class LabWebServer {
         return Json.array(rows);
     }
 
+    private String userJson(User user, String message) {
+        // Login and registration return the same shape so app.js can reuse enterApp().
+        Map<String, Object> values = Json.row(
+                "ok", true,
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "fullName", user.getFullName(),
+                "role", user.getRole()
+        );
+        if (message != null) {
+            values.put("message", message);
+        }
+        return Json.object(values);
+    }
+
     private User currentUser(HttpExchange exchange) {
-        int userId = Integer.parseInt(queryParam(exchange, "userId"));
+        FormData query = FormData.fromQuery(exchange.getRequestURI().getRawQuery());
+        int userId = query.getInt("userId");
         return userDao.findById(userId).orElseThrow(() -> new IllegalArgumentException("Unknown user id: " + userId));
+    }
+
+    private User userFromForm(FormData form) {
+        int userId = form.getInt("userId");
+        return userDao.findById(userId).orElseThrow(() -> new IllegalArgumentException("Unknown user id: " + userId));
+    }
+
+    private void requireAdmin(User user) {
+        if (!user.isAdmin()) {
+            throw new IllegalArgumentException("Admin permission required");
+        }
+    }
+
+    private void requireTeacherOrAdmin(User user) {
+        if (!user.isAdmin() && !user.isTeacher()) {
+            throw new IllegalArgumentException("Teacher or admin permission required");
+        }
+    }
+
+    private void requireTechnicianOrAdmin(User user) {
+        if (!user.isAdmin() && !"TECHNICIAN".equals(user.getRole())) {
+            throw new IllegalArgumentException("Technician or admin permission required");
+        }
+    }
+
+    private List<Integer> parseIdList(String raw) {
+        List<Integer> ids = new ArrayList<>();
+        if (raw == null || raw.isBlank()) {
+            return ids;
+        }
+        for (String part : raw.split(",")) {
+            String value = part.trim();
+            if (!value.isEmpty()) {
+                ids.add(Integer.parseInt(value));
+            }
+        }
+        return ids;
+    }
+
+    private Map<Integer, Integer> parseConsumableRequests(String raw) {
+        Map<Integer, Integer> requests = new LinkedHashMap<>();
+        if (raw == null || raw.isBlank()) {
+            return requests;
+        }
+        for (String part : raw.split(",")) {
+            String value = part.trim();
+            if (value.isEmpty()) {
+                continue;
+            }
+            String[] pieces = value.split(":");
+            if (pieces.length != 2) {
+                throw new IllegalArgumentException("Bad consumable request: " + value);
+            }
+            int consumableId = Integer.parseInt(pieces[0]);
+            int quantity = Integer.parseInt(pieces[1]);
+            if (quantity > 0) {
+                requests.put(consumableId, quantity);
+            }
+        }
+        return requests;
     }
 
     private void handleStatic(HttpExchange exchange) throws IOException {

@@ -45,9 +45,12 @@ API：
 
 `POST /api/login`
 
+`POST /api/register`
+
 功能：
 
 - 用户输入 username/password；
+- 新学生可以通过弹窗注册；
 - 后端验证；
 - 登录成功后进入主页面。
 
@@ -57,12 +60,15 @@ API：
 
 - `GET /api/equipment`
 - `GET /api/equipment?q=keyword`
+- `POST /api/equipment/save`
+- `POST /api/equipment/retire`
 - `POST /api/maintenance/report`
 
 功能：
 
 - 查看设备；
 - 搜索设备；
+- 管理员新增、编辑、退役设备；
 - 上报设备问题。
 
 ### Reservations
@@ -77,6 +83,8 @@ API：
 功能：
 
 - 创建预约；
+- 一次选择多台设备；
+- 随预约提交耗材需求；
 - 查看预约；
 - 老师/管理员审批；
 - 取消预约。
@@ -100,11 +108,13 @@ API：
 API：
 
 - `GET /api/inventory`
+- `POST /api/inventory/add`
 - `POST /api/inventory/change`
 
 功能：
 
 - 查看库存；
+- 管理员新增耗材种类；
 - 修改库存；
 - 显示低库存。
 
@@ -145,7 +155,7 @@ HTML 表单 / JavaScript
 
 ## 报告里可用的一段话
 
-The system includes a web front-end implemented with HTML, CSS, and JavaScript. The front-end is served by a lightweight Java HTTP server and communicates with the back-end through API endpoints. The main web pages include login, equipment catalogue, reservation management, maintenance tickets, inventory, and reports. This satisfies the assignment's user interface requirement because users can operate the database system through a browser instead of using SQL directly.
+The system includes a web front-end implemented with HTML, CSS, and JavaScript. The front-end is served by a lightweight Java HTTP server and communicates with the back-end through API endpoints. The main web pages include login and student registration, equipment catalogue and admin equipment management, reservation management with multi-equipment selection, maintenance tickets, inventory, and reports. This satisfies the assignment's user interface requirement because users can operate the database system through a browser instead of using SQL directly.
 
 ## Report 截图建议
 
@@ -155,10 +165,11 @@ The system includes a web front-end implemented with HTML, CSS, and JavaScript. 
 2. 主页面；
 3. Equipment 页面；
 4. Reservation 表单；
-5. 审批按钮；
-6. Maintenance 更新弹窗；
-7. Inventory 页面；
-8. Reports 页面。
+5. 多设备选择和已选摘要；
+6. 审批按钮；
+7. Maintenance 更新弹窗；
+8. Inventory 页面和新增耗材入口；
+9. Reports 页面。
 
 ## 答辩可能问什么
 

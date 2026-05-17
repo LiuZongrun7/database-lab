@@ -15,7 +15,11 @@ This project uses a web front-end written with HTML, CSS, and JavaScript. The Ja
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
 | `/api/login` | POST | Login and return user info. |
+| `/api/register` | POST | Register a new student account. |
+| `/api/labs` | GET | List labs for admin forms. |
 | `/api/equipment` | GET | List or search equipment. |
+| `/api/equipment/save` | POST | Admin creates or updates equipment. |
+| `/api/equipment/retire` | POST | Admin marks equipment as retired. |
 | `/api/courses` | GET | List courses visible to current user. |
 | `/api/users/technicians` | GET | List technicians for maintenance assignment. |
 | `/api/reservations` | GET | List reservations visible to current user. |
@@ -26,6 +30,7 @@ This project uses a web front-end written with HTML, CSS, and JavaScript. The Ja
 | `/api/maintenance/report` | POST | Report equipment problem. |
 | `/api/maintenance/update` | POST | Update maintenance ticket. |
 | `/api/inventory` | GET | List consumable stock. |
+| `/api/inventory/add` | POST | Admin creates a new consumable item type. |
 | `/api/inventory/change` | POST | Change stock amount. |
 | `/api/reports/lab-usage` | GET | Lab usage report. |
 | `/api/reports/equipment-status` | GET | Equipment status report. |
@@ -45,6 +50,22 @@ Output:
 
 Related SQL:
 - `SELECT ... FROM users WHERE username = ? AND password = ? AND active = TRUE`
+
+### `AuthService.registerStudent(...)`
+
+Purpose: create a self-service student account.
+
+Input:
+- `username`
+- `password`
+- `fullName`
+- `email`
+
+Output:
+- new `User`
+
+Rule:
+- self-registration always creates role `STUDENT`.
 
 ## Equipment
 
@@ -68,6 +89,20 @@ Input:
 Output:
 - `List<Equipment>`
 
+### `EquipmentDao.create(...)` and `EquipmentDao.update(...)`
+
+Purpose: admin equipment management.
+
+Database changes:
+- Inserts or updates one row in `equipment`.
+
+### `EquipmentDao.retire(int equipmentId)`
+
+Purpose: mark equipment as no longer bookable without deleting historical records.
+
+Database changes:
+- Sets `equipment.status` to `RETIRED`.
+
 ## Reservation
 
 ### `ReservationService.requestReservation(...)`
@@ -75,12 +110,13 @@ Output:
 Purpose: create a pending reservation after validating time, equipment status, and conflicts.
 
 Input:
-- `equipmentId`
+- `equipmentIds`
 - `requesterId`
 - `courseId`
 - `start`
 - `end`
 - `purpose`
+- `consumableRequests`
 
 Output:
 - new reservation id
@@ -88,11 +124,13 @@ Output:
 Validation:
 - end time must be after start time.
 - purpose cannot be blank.
-- equipment must be `AVAILABLE` or `RESERVED`.
+- each selected equipment item must be `AVAILABLE` or `RESERVED`.
 - overlapping `PENDING` or `APPROVED` reservations are not allowed.
 
 Transaction:
 - Uses one transaction for status check, conflict check, and insert.
+- Writes selected equipment to `reservation_equipment`.
+- Writes optional consumable needs to `reservation_consumables`.
 
 ### `ReservationService.decideReservation(...)`
 
@@ -155,6 +193,21 @@ Database changes:
 - If status is `RESOLVED` or `CLOSED`, equipment status is set back to `AVAILABLE`.
 
 ## Inventory
+
+### `InventoryService.addConsumable(...)`
+
+Purpose: create a new consumable item type for a lab.
+
+Input:
+- `labId`
+- `itemName`
+- `unit`
+- `quantity`
+- `reorderLevel`
+
+Validation:
+- item name and unit cannot be blank.
+- quantity and reorder level cannot be negative.
 
 ### `InventoryService.changeStock(...)`
 

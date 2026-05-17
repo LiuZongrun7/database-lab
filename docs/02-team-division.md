@@ -7,14 +7,14 @@ This document describes the planned division of work for a five-person group. Th
 Responsibilities:
 - Coordinate weekly progress and final integration.
 - Set up Maven project structure.
-- Implement reservation workflow.
+- Implement reservation workflow, including multi-equipment requests.
+- Connect reservation consumable needs to the reservation form and database.
 - Write reservation-related service logic and tests.
 - Prepare the final run instructions.
 
 Main files:
 - `pom.xml`
 - `README.md`
-- `src/main/java/edu/ucd/comp2013j/lab/App.java`
 - `src/main/java/edu/ucd/comp2013j/lab/App.java`
 - `src/main/java/edu/ucd/comp2013j/lab/web/LabWebServer.java`
 - `src/main/java/edu/ucd/comp2013j/lab/dao/ReservationDao.java`
@@ -25,7 +25,7 @@ Main files:
 
 Responsibilities:
 - Design ER model and relational schema.
-- Write table definitions, constraints, views, indexes, and seed data.
+- Write table definitions, link tables, constraints, views, indexes, and seed data.
 - Explain mapping from ER model to relational model.
 - Check SQL statements in the report.
 
@@ -40,6 +40,7 @@ Main files:
 
 Responsibilities:
 - Implement equipment catalogue.
+- Implement admin equipment create/edit/retire operations.
 - Implement problem reporting and maintenance ticket handling.
 - Connect maintenance status with equipment availability.
 - Prepare maintenance demo scenario.
@@ -55,6 +56,7 @@ Main files:
 
 Responsibilities:
 - Implement consumable inventory management.
+- Implement creating new consumable item types.
 - Implement stock transaction logic.
 - Implement database reports and aggregation queries.
 - Prepare report screenshots.
@@ -70,7 +72,8 @@ Main files:
 
 Responsibilities:
 - Keep web front-end layout consistent and easy to demonstrate.
-- Write HTML/CSS/JavaScript page logic and shared web helper functions.
+- Write HTML/CSS/JavaScript page logic, role-based navigation, registration dialog, and shared web helper functions.
+- Keep interaction details usable, such as collapsed equipment selection with selected-item summary.
 - Write tests and manual test cases.
 - Combine documents and prepare the video script.
 

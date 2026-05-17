@@ -19,6 +19,7 @@ public class ReportDao {
     }
 
     public List<ReportRow> labUsage() {
+        // Report queries are read-only; the SQL view hides the longer reservation join.
         String sql = """
                 SELECT lab_code, reservation_count, approved_count, completed_count
                 FROM v_lab_usage_report
@@ -43,6 +44,7 @@ public class ReportDao {
     }
 
     public List<ReportRow> equipmentStatusSummary() {
+        // This one uses GROUP BY directly because it is easier to explain in the report.
         String sql = """
                 SELECT status, COUNT(*) AS total,
                        SUM(CASE WHEN risk_level = 'HIGH' THEN 1 ELSE 0 END) AS high_risk,

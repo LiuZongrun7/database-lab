@@ -13,6 +13,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ReservationDao {
     private final Database database;
@@ -23,16 +24,18 @@ public class ReservationDao {
 
     public boolean hasTimeConflict(Connection connection, int equipmentId, LocalDateTime start, LocalDateTime end,
                                    Integer exceptReservationId) throws SQLException {
+        // This overlap test catches partial overlaps and fully contained bookings.
         String sql = """
                 SELECT COUNT(*) AS total
-                FROM reservations
-                WHERE equipment_id = ?
-                  AND status IN ('PENDING', 'APPROVED')
-                  AND start_time < ?
-                  AND end_time > ?
+                FROM reservations r
+                JOIN reservation_equipment re ON r.reservation_id = re.reservation_id
+                WHERE re.equipment_id = ?
+                  AND r.status IN ('PENDING', 'APPROVED')
+                  AND r.start_time < ?
+                  AND r.end_time > ?
                 """;
         if (exceptReservationId != null) {
-            sql += " AND reservation_id <> ?";
+            sql += " AND r.reservation_id <> ?";
         }
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -49,27 +52,31 @@ public class ReservationDao {
         }
     }
 
-    public int create(Connection connection, int equipmentId, int requesterId, Integer courseId,
-                      LocalDateTime start, LocalDateTime end, String purpose) throws SQLException {
+    public int create(Connection connection, List<Integer> equipmentIds, int requesterId, Integer courseId,
+                      LocalDateTime start, LocalDateTime end, String purpose,
+                      Map<Integer, Integer> consumableRequests) throws SQLException {
         String sql = """
-                INSERT INTO reservations (equipment_id, requester_id, course_id, start_time, end_time, purpose, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'PENDING')
+                INSERT INTO reservations (requester_id, course_id, start_time, end_time, purpose, status)
+                VALUES (?, ?, ?, ?, ?, 'PENDING')
                 """;
         try (PreparedStatement ps = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, equipmentId);
-            ps.setInt(2, requesterId);
+            ps.setInt(1, requesterId);
             if (courseId == null) {
-                ps.setNull(3, java.sql.Types.INTEGER);
+                ps.setNull(2, java.sql.Types.INTEGER);
             } else {
-                ps.setInt(3, courseId);
+                ps.setInt(2, courseId);
             }
-            ps.setTimestamp(4, Timestamp.valueOf(start));
-            ps.setTimestamp(5, Timestamp.valueOf(end));
-            ps.setString(6, purpose);
+            ps.setTimestamp(3, Timestamp.valueOf(start));
+            ps.setTimestamp(4, Timestamp.valueOf(end));
+            ps.setString(5, purpose);
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
-                    return keys.getInt(1);
+                    int reservationId = keys.getInt(1);
+                    // A reservation can contain many equipment items and optional consumable needs.
+                    insertEquipment(connection, reservationId, equipmentIds);
+                    insertConsumableRequests(connection, reservationId, consumableRequests);
+                    return reservationId;
                 }
             }
         }
@@ -78,16 +85,14 @@ public class ReservationDao {
 
     public List<Reservation> findVisibleFor(User user) {
         String sql = """
-                SELECT r.reservation_id, e.asset_tag, e.equipment_name, u.full_name, r.start_time, r.end_time,
-                       r.purpose, r.status
-                FROM reservations r
-                JOIN equipment e ON r.equipment_id = e.equipment_id
-                JOIN users u ON r.requester_id = u.user_id
+                SELECT reservation_id, asset_tags, equipment_names, full_name, start_time, end_time,
+                       purpose, consumable_needs, status
+                FROM v_user_reservation_history
                 """;
         if (!user.isAdmin() && !user.isTeacher()) {
-            sql += " WHERE r.requester_id = ?";
+            sql += " WHERE requester_id = ?";
         }
-        sql += " ORDER BY r.start_time DESC";
+        sql += " ORDER BY start_time DESC";
 
         try (Connection connection = database.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -145,15 +150,46 @@ public class ReservationDao {
         }
     }
 
+    private void insertEquipment(Connection connection, int reservationId, List<Integer> equipmentIds)
+            throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO reservation_equipment (reservation_id, equipment_id) VALUES (?, ?)")) {
+            for (int equipmentId : equipmentIds) {
+                ps.setInt(1, reservationId);
+                ps.setInt(2, equipmentId);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    private void insertConsumableRequests(Connection connection, int reservationId,
+                                          Map<Integer, Integer> consumableRequests) throws SQLException {
+        if (consumableRequests == null || consumableRequests.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO reservation_consumables (reservation_id, consumable_id, requested_quantity) VALUES (?, ?, ?)")) {
+            for (Map.Entry<Integer, Integer> entry : consumableRequests.entrySet()) {
+                ps.setInt(1, reservationId);
+                ps.setInt(2, entry.getKey());
+                ps.setInt(3, entry.getValue());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
     private Reservation mapReservation(ResultSet rs) throws SQLException {
         return new Reservation(
                 rs.getInt("reservation_id"),
-                rs.getString("asset_tag"),
-                rs.getString("equipment_name"),
+                rs.getString("asset_tags"),
+                rs.getString("equipment_names"),
                 rs.getString("full_name"),
                 rs.getTimestamp("start_time").toLocalDateTime(),
                 rs.getTimestamp("end_time").toLocalDateTime(),
                 rs.getString("purpose"),
+                rs.getString("consumable_needs"),
                 rs.getString("status")
         );
     }

@@ -19,7 +19,7 @@ The database has these main groups:
 - User and permission data: `users`.
 - Laboratory and equipment data: `labs`, `equipment`.
 - Course access data: `courses`, `course_members`, `equipment_course_access`.
-- Reservation data: `reservations`, `approvals`.
+- Reservation data: `reservations`, `reservation_equipment`, `reservation_consumables`, `approvals`.
 - Maintenance data: `maintenance_tickets`, `maintenance_updates`.
 - Inventory data: `consumables`, `stock_transactions`.
 
@@ -27,6 +27,8 @@ Two many-to-many examples:
 
 - A course has many users and a user can join many courses, so we use `course_members`.
 - Equipment can be used by many courses and a course can access many equipment items, so we use `equipment_course_access`.
+- A reservation can include several equipment items, so we use `reservation_equipment`.
+- A reservation can request several consumables with quantities, so we use `reservation_consumables`.
 
 The schema uses:
 
@@ -44,6 +46,7 @@ The schema uses:
 - Run the app and check that seeded users and equipment appear.
 - Be ready to explain why `stock_transactions` is separate from `consumables`.
 - Be ready to explain why approvals are a separate table instead of only a status column.
+- Be ready to explain why reservation equipment and reservation consumables are separate link tables.
 
 ## Possible Viva Questions
 
@@ -58,6 +61,10 @@ A: The design is not just separate tables. It includes many-to-many relationship
 Q: Why do you have `stock_transactions`?
 
 A: Current quantity alone is not enough. The transaction table records who changed stock, when it changed, by how much, and why.
+
+Q: Why not store consumable requests as text inside `reservations`?
+
+A: A reservation can request multiple consumables, each with a quantity. A separate table keeps the design normalized and queryable.
 
 Q: What views did you create?
 

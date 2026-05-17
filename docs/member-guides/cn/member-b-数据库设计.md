@@ -19,7 +19,7 @@
 - 用户和角色：`users`
 - 实验室和设备：`labs`, `equipment`
 - 课程和访问权限：`courses`, `course_members`, `equipment_course_access`
-- 预约和审批：`reservations`, `approvals`
+- 预约和审批：`reservations`, `reservation_equipment`, `reservation_consumables`, `approvals`
 - 维修：`maintenance_tickets`, `maintenance_updates`
 - 库存：`consumables`, `stock_transactions`
 
@@ -27,6 +27,8 @@
 
 - 用户和课程：用 `course_members`
 - 设备和课程：用 `equipment_course_access`
+- 预约和设备：用 `reservation_equipment`
+- 预约和耗材需求：用 `reservation_consumables`
 
 数据库里用了：
 
@@ -43,6 +45,8 @@
 - 打开 `schema.sql`，看懂每张表。
 - 对照 ER 图和 SQL 表。
 - 能解释为什么 `approvals` 单独建表。
+- 能解释为什么 `reservation_equipment` 单独建表。
+- 能解释为什么 `reservation_consumables` 只记录需求，不直接改库存。
 - 能解释为什么 `stock_transactions` 单独建表。
 - 能说出至少两个约束例子。
 
@@ -59,6 +63,10 @@ A: 它不是单表 CRUD，有多对多关系、约束、视图、索引、事务
 ### Q: 为什么要有库存流水表？
 
 A: 当前库存只能说明现在有多少，不能说明谁改过、什么时候改过、为什么改。`stock_transactions` 可以保存历史。
+
+### Q: 为什么预约耗材需求不直接放在 `reservations` 表里？
+
+A: 一次预约可能需要多种耗材，每种耗材数量也不同，所以用 `reservation_consumables` 保存一对多/多对多关系更清楚。
 
 ### Q: 你们创建了哪些视图？
 
