@@ -39,6 +39,7 @@ public class LabWebServer {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final Database database;
+    private final String bindHost;
     private final int port;
     private final UserDao userDao;
     private final EquipmentDao equipmentDao;
@@ -53,7 +54,12 @@ public class LabWebServer {
     private final InventoryService inventoryService;
 
     public LabWebServer(Database database, int port) {
+        this(database, "0.0.0.0", port);
+    }
+
+    public LabWebServer(Database database, String bindHost, int port) {
         this.database = database;
+        this.bindHost = bindHost;
         this.port = port;
         this.userDao = new UserDao(database);
         this.equipmentDao = new EquipmentDao(database);
@@ -70,7 +76,7 @@ public class LabWebServer {
 
     public void start() {
         try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+            HttpServer server = HttpServer.create(new InetSocketAddress(bindHost, port), 0);
             // Keeping the routes in one small server avoids a heavy MVC framework for this coursework.
             server.createContext("/", this::handleStatic);
             server.createContext("/api/login", api(this::handleLogin));
@@ -95,7 +101,7 @@ public class LabWebServer {
             server.createContext("/api/reports/equipment-status", api(this::handleEquipmentStatusReport));
             server.setExecutor(null);
             server.start();
-            System.out.println("Lab Equipment System running at http://localhost:" + port);
+            System.out.println("Lab Equipment System running at http://" + bindHost + ":" + port);
             System.out.println("Press Ctrl+C to stop the server.");
         } catch (IOException ex) {
             throw new IllegalStateException("Cannot start web server", ex);

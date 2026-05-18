@@ -144,6 +144,45 @@ body::after {
     box-shadow: var(--shadow-soft);
 }
 
+.topbar-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.language-switch {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: var(--shadow-soft);
+}
+
+.language-switch button {
+    min-height: 30px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    box-shadow: none;
+    font-size: 12px;
+}
+
+.language-switch button:hover {
+    transform: none;
+    box-shadow: none;
+    background: var(--accent-weak);
+    color: var(--accent-strong);
+}
+
+.language-switch button.active {
+    background: var(--accent);
+    color: #fff;
+}
+
 main {
     width: min(1240px, calc(100vw - 40px));
     margin: 28px auto 42px;
@@ -852,6 +891,11 @@ td button + button {
 
     .logout {
         margin-left: 0;
+    }
+
+    .topbar-actions {
+        width: 100%;
+        justify-content: flex-start;
     }
 }
 

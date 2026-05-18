@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>实验室设备管理系统</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=20260518-i18n">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.min.css">
 </head>
 <body>
@@ -12,43 +12,49 @@
     <div class="brand">
         <div class="brand-mark">Lab</div>
         <div>
-            <h1>实验室设备管理系统</h1>
-            <p>设备预约、维修工单与耗材管理平台</p>
+            <h1 data-i18n="app.title">实验室设备管理系统</h1>
+            <p data-i18n="app.subtitle">设备预约、维修工单与耗材管理平台</p>
         </div>
     </div>
-    <div id="userBadge" class="user-badge"><i class="icon-user"></i> 未登录</div>
+    <div class="topbar-actions">
+        <div class="language-switch" role="group" aria-label="Language">
+            <button type="button" data-lang-option="zh">中文</button>
+            <button type="button" data-lang-option="en">EN</button>
+        </div>
+        <div id="userBadge" class="user-badge"><i class="icon-user"></i> 未登录</div>
+    </div>
 </header>
 
 <main>
     <section id="loginView" class="login-panel">
         <p class="eyebrow">Campus Laboratory Service</p>
-        <h2>实验室设备服务</h2>
-        <p class="hint" style="margin-bottom: 18px; margin-top: 0; border: none; background: none; padding: 0;">按身份进入对应工作台，完成预约、审批、维修和库存处理。</p>
+        <h2 data-i18n="login.title">实验室设备服务</h2>
+        <p class="hint" data-i18n="login.description" style="margin-bottom: 18px; margin-top: 0; border: none; background: none; padding: 0;">按身份进入对应工作台，完成预约、审批、维修和库存处理。</p>
         <form id="loginForm" class="form-grid">
             <label>
-                用户名
+                <span data-i18n="form.username">用户名</span>
                 <input name="username" value="admin" required>
             </label>
             <label>
-                密码
+                <span data-i18n="form.password">密码</span>
                 <input name="password" type="password" value="admin123" required>
             </label>
             <div class="login-actions">
-                <button type="submit"><i class="icon-log-in"></i> 登录</button>
-                <button type="button" id="registerButton" class="secondary"><i class="icon-user-plus"></i> 注册学生账号</button>
+                <button type="submit" data-i18n="action.login"><i class="icon-log-in"></i> 登录</button>
+                <button type="button" id="registerButton" class="secondary" data-i18n="action.registerStudent"><i class="icon-user-plus"></i> 注册学生账号</button>
             </div>
         </form>
-        <p class="hint">演示账号：admin/admin123，teacher/teacher123，student1/student123，tech/tech123</p>
+        <p class="hint" data-i18n="login.demoAccounts">演示账号：admin/admin123，teacher/teacher123，student1/student123，tech/tech123</p>
     </section>
 
     <section id="appView" class="app-view hidden">
         <nav class="tabs">
-            <button class="tab active" data-tab="equipment"><i class="icon-cpu"></i> 设备目录</button>
-            <button class="tab" data-tab="reservations"><i class="icon-calendar-check"></i> 预约管理</button>
-            <button class="tab" data-tab="maintenance"><i class="icon-wrench"></i> 维修工单</button>
-            <button class="tab" data-tab="inventory"><i class="icon-package"></i> 耗材库存</button>
-            <button class="tab" data-tab="reports"><i class="icon-bar-chart"></i> 统计报表</button>
-            <button id="logoutButton" class="logout tab" type="button"><i class="icon-log-out"></i> 退出登录</button>
+            <button class="tab active" data-tab="equipment" data-i18n="nav.equipment"><i class="icon-cpu"></i> 设备目录</button>
+            <button class="tab" data-tab="reservations" data-i18n="nav.reservations"><i class="icon-calendar-check"></i> 预约管理</button>
+            <button class="tab" data-tab="maintenance" data-i18n="nav.maintenance"><i class="icon-wrench"></i> 维修工单</button>
+            <button class="tab" data-tab="inventory" data-i18n="nav.inventory"><i class="icon-package"></i> 耗材库存</button>
+            <button class="tab" data-tab="reports" data-i18n="nav.reports"><i class="icon-bar-chart"></i> 统计报表</button>
+            <button id="logoutButton" class="logout tab" type="button" data-i18n="nav.logout"><i class="icon-log-out"></i> 退出登录</button>
         </nav>
 
         <section id="roleWorkspace" class="role-workspace"></section>
@@ -56,29 +62,29 @@
         <section id="equipment" class="tab-page active">
             <div class="section-head">
                 <div>
-                    <h2>设备目录</h2>
-                    <p>查询实验室设备，发现故障时可以提交维修工单。</p>
+                    <h2 data-i18n="equipment.title">设备目录</h2>
+                    <p data-i18n="equipment.subtitle">查询实验室设备，发现故障时可以提交维修工单。</p>
                 </div>
                 <form id="equipmentSearch" class="inline-form">
-                    <input name="q" placeholder="设备编号、名称或类别">
-                    <button type="submit"><i class="icon-search"></i> 搜索</button>
-                    <button type="button" id="resetEquipmentSearch" class="secondary"><i class="icon-rotate-ccw"></i> 重置</button>
+                    <input name="q" placeholder="设备编号、名称或类别" data-i18n-placeholder="equipment.searchPlaceholder">
+                    <button type="submit" data-i18n="action.search"><i class="icon-search"></i> 搜索</button>
+                    <button type="button" id="resetEquipmentSearch" class="secondary" data-i18n="action.reset"><i class="icon-rotate-ccw"></i> 重置</button>
                 </form>
-                <button type="button" id="addEquipmentButton" class="secondary hidden"><i class="icon-plus"></i> 新增设备</button>
+                <button type="button" id="addEquipmentButton" class="secondary hidden" data-i18n="action.addEquipment"><i class="icon-plus"></i> 新增设备</button>
             </div>
             <div class="table-wrap">
                 <table>
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>设备编号</th>
-                        <th>设备名称</th>
-                        <th>类别</th>
-                        <th>实验室</th>
-                        <th>状态</th>
-                        <th>风险等级</th>
-                        <th>未完成工单</th>
-                        <th>操作</th>
+                        <th data-i18n="table.assetTag">设备编号</th>
+                        <th data-i18n="table.equipmentName">设备名称</th>
+                        <th data-i18n="table.category">类别</th>
+                        <th data-i18n="table.lab">实验室</th>
+                        <th data-i18n="table.status">状态</th>
+                        <th data-i18n="table.riskLevel">风险等级</th>
+                        <th data-i18n="table.openTickets">未完成工单</th>
+                        <th data-i18n="table.actions">操作</th>
                     </tr>
                     </thead>
                     <tbody id="equipmentRows"></tbody>
@@ -89,18 +95,18 @@
         <section id="reservations" class="tab-page">
             <div class="section-head">
                 <div>
-                    <h2>预约管理</h2>
-                    <p>提交设备预约申请，并处理待审批预约。</p>
+                    <h2 data-i18n="reservations.title">预约管理</h2>
+                    <p data-i18n="reservations.subtitle">提交设备预约申请，并处理待审批预约。</p>
                 </div>
-                <button type="button" id="refreshReservations" class="secondary"><i class="icon-refresh-cw"></i> 刷新</button>
+                <button type="button" id="refreshReservations" class="secondary" data-i18n="action.refresh"><i class="icon-refresh-cw"></i> 刷新</button>
             </div>
             <form id="reservationForm" class="card-form">
-                <h3>新建预约申请</h3>
+                <h3 data-i18n="reservation.new">新建预约申请</h3>
                 <div id="reservationEquipmentSection" class="wide request-section equipment-section collapsed">
                     <div class="request-section-head">
                         <div>
-                            <h3>选择设备</h3>
-                            <p>可以勾选多台设备一起提交预约。</p>
+                            <h3 data-i18n="reservation.selectEquipment">选择设备</h3>
+                            <p data-i18n="reservation.selectEquipmentHint">可以勾选多台设备一起提交预约。</p>
                         </div>
                         <div class="section-actions">
                             <span id="selectedEquipmentCount" class="selection-count">未选择</span>
@@ -111,47 +117,47 @@
                     <div id="reservationEquipment" class="equipment-choice-list"></div>
                     <div id="selectedEquipmentSummary" class="selection-summary">请选择至少一台设备</div>
                 </div>
-                <label>课程 <select name="courseId" id="reservationCourse"></select></label>
+                <label><span data-i18n="form.course">课程</span> <select name="courseId" id="reservationCourse"></select></label>
                 <div class="wide request-section time-range">
                     <div class="request-section-head">
                         <div>
-                            <h3>预约时间</h3>
-                            <p>选择开始和结束时间。</p>
+                            <h3 data-i18n="reservation.time">预约时间</h3>
+                            <p data-i18n="reservation.timeHint">选择开始和结束时间。</p>
                         </div>
                     </div>
                     <div class="time-fields">
-                        <label>开始时间 <input name="startTime" type="datetime-local" step="900" required></label>
-                        <label>结束时间 <input name="endTime" type="datetime-local" step="900" required></label>
+                        <label><span data-i18n="form.startTime">开始时间</span> <input name="startTime" type="datetime-local" step="900" required></label>
+                        <label><span data-i18n="form.endTime">结束时间</span> <input name="endTime" type="datetime-local" step="900" required></label>
                     </div>
                 </div>
-                <label class="wide">用途 <input name="purpose" placeholder="简单说明为什么要使用这台设备" required></label>
+                <label class="wide"><span data-i18n="form.purpose">用途</span> <input name="purpose" placeholder="简单说明为什么要使用这台设备" data-i18n-placeholder="reservation.purposePlaceholder" required></label>
                 <div class="wide request-section">
                     <div class="request-section-head">
                         <div>
-                            <h3>耗材需求</h3>
-                            <p>不需要耗材可以留空；需要时添加物品和数量。</p>
+                            <h3 data-i18n="reservation.consumables">耗材需求</h3>
+                            <p data-i18n="reservation.consumablesHint">不需要耗材可以留空；需要时添加物品和数量。</p>
                         </div>
-                        <button type="button" id="addConsumableRequest" class="secondary small-action"><i class="icon-plus"></i> 添加耗材</button>
+                        <button type="button" id="addConsumableRequest" class="secondary small-action" data-i18n="action.addConsumable"><i class="icon-plus"></i> 添加耗材</button>
                     </div>
                     <div id="reservationConsumables" class="consumable-request-list"></div>
-                    <p id="noConsumableRequests" class="empty-note">本次预约暂不需要耗材。</p>
+                    <p id="noConsumableRequests" class="empty-note" data-i18n="reservation.noConsumables">本次预约暂不需要耗材。</p>
                 </div>
-                <button type="submit"><i class="icon-send"></i> 提交申请</button>
+                <button type="submit" data-i18n="action.submitRequest"><i class="icon-send"></i> 提交申请</button>
             </form>
             <div class="table-wrap">
                 <table>
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>设备编号</th>
-                        <th>设备</th>
-                        <th>申请人</th>
-                        <th>开始</th>
-                        <th>结束</th>
-                        <th>状态</th>
-                        <th>用途</th>
-                        <th>耗材需求</th>
-                        <th>操作</th>
+                        <th data-i18n="table.assetTag">设备编号</th>
+                        <th data-i18n="table.equipment">设备</th>
+                        <th data-i18n="table.requester">申请人</th>
+                        <th data-i18n="table.start">开始</th>
+                        <th data-i18n="table.end">结束</th>
+                        <th data-i18n="table.status">状态</th>
+                        <th data-i18n="table.purpose">用途</th>
+                        <th data-i18n="table.consumables">耗材需求</th>
+                        <th data-i18n="table.actions">操作</th>
                     </tr>
                     </thead>
                     <tbody id="reservationRows"></tbody>
@@ -162,25 +168,25 @@
         <section id="maintenance" class="tab-page">
             <div class="section-head">
                 <div>
-                    <h2>维修工单</h2>
-                    <p>跟踪设备故障和维修处理进度。</p>
+                    <h2 data-i18n="maintenance.title">维修工单</h2>
+                    <p data-i18n="maintenance.subtitle">跟踪设备故障和维修处理进度。</p>
                 </div>
-                <button type="button" id="refreshMaintenance" class="secondary"><i class="icon-refresh-cw"></i> 刷新</button>
+                <button type="button" id="refreshMaintenance" class="secondary" data-i18n="action.refresh"><i class="icon-refresh-cw"></i> 刷新</button>
             </div>
             <div class="table-wrap">
                 <table>
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>设备编号</th>
-                        <th>设备</th>
-                        <th>上报人</th>
-                        <th>维修人员</th>
-                        <th>标题</th>
-                        <th>优先级</th>
-                        <th>状态</th>
-                        <th>上报时间</th>
-                        <th>操作</th>
+                        <th data-i18n="table.assetTag">设备编号</th>
+                        <th data-i18n="table.equipment">设备</th>
+                        <th data-i18n="table.reporter">上报人</th>
+                        <th data-i18n="table.technician">维修人员</th>
+                        <th data-i18n="table.title">标题</th>
+                        <th data-i18n="table.priority">优先级</th>
+                        <th data-i18n="table.status">状态</th>
+                        <th data-i18n="table.reportedAt">上报时间</th>
+                        <th data-i18n="table.actions">操作</th>
                     </tr>
                     </thead>
                     <tbody id="maintenanceRows"></tbody>
@@ -191,12 +197,12 @@
         <section id="inventory" class="tab-page">
             <div class="section-head">
                 <div>
-                    <h2>耗材库存</h2>
-                    <p>管理实验室耗材库存，并记录每一次库存变动。</p>
+                    <h2 data-i18n="inventory.title">耗材库存</h2>
+                    <p data-i18n="inventory.subtitle">管理实验室耗材库存，并记录每一次库存变动。</p>
                 </div>
                 <div class="section-actions">
-                    <button type="button" id="addConsumableButton" class="secondary hidden"><i class="icon-plus"></i> 新增耗材</button>
-                    <button type="button" id="refreshInventory" class="secondary"><i class="icon-refresh-cw"></i> 刷新</button>
+                    <button type="button" id="addConsumableButton" class="secondary hidden" data-i18n="action.addConsumableType"><i class="icon-plus"></i> 新增耗材</button>
+                    <button type="button" id="refreshInventory" class="secondary" data-i18n="action.refresh"><i class="icon-refresh-cw"></i> 刷新</button>
                 </div>
             </div>
             <div class="table-wrap">
@@ -204,13 +210,13 @@
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>实验室</th>
-                        <th>耗材</th>
-                        <th>单位</th>
-                        <th>数量</th>
-                        <th>补货线</th>
-                        <th>库存提醒</th>
-                        <th>操作</th>
+                        <th data-i18n="table.lab">实验室</th>
+                        <th data-i18n="table.consumable">耗材</th>
+                        <th data-i18n="table.unit">单位</th>
+                        <th data-i18n="table.quantity">数量</th>
+                        <th data-i18n="table.reorderLevel">补货线</th>
+                        <th data-i18n="table.stockAlert">库存提醒</th>
+                        <th data-i18n="table.actions">操作</th>
                     </tr>
                     </thead>
                     <tbody id="inventoryRows"></tbody>
@@ -221,29 +227,29 @@
         <section id="reports" class="tab-page">
             <div class="section-head">
                 <div>
-                    <h2>统计报表</h2>
-                    <p>基于 SQL 视图和聚合查询生成的管理统计。</p>
+                    <h2 data-i18n="reports.title">统计报表</h2>
+                    <p data-i18n="reports.subtitle">基于 SQL 视图和聚合查询生成的管理统计。</p>
                 </div>
-                <button type="button" id="refreshReports" class="secondary"><i class="icon-refresh-cw"></i> 刷新</button>
+                <button type="button" id="refreshReports" class="secondary" data-i18n="action.refresh"><i class="icon-refresh-cw"></i> 刷新</button>
             </div>
             <div class="report-grid">
                 <div>
-                    <h3>实验室使用情况</h3>
+                    <h3 data-i18n="reports.labUsage">实验室使用情况</h3>
                     <div class="table-wrap">
                         <table>
                             <thead>
-                            <tr><th>实验室</th><th>预约数</th><th>已批准</th><th>已完成</th></tr>
+                            <tr><th data-i18n="table.lab">实验室</th><th data-i18n="table.reservations">预约数</th><th data-i18n="table.approved">已批准</th><th data-i18n="table.completed">已完成</th></tr>
                             </thead>
                             <tbody id="labReportRows"></tbody>
                         </table>
                     </div>
                 </div>
                 <div>
-                    <h3>设备状态汇总</h3>
+                    <h3 data-i18n="reports.equipmentStatus">设备状态汇总</h3>
                     <div class="table-wrap">
                         <table>
                             <thead>
-                            <tr><th>状态</th><th>数量</th><th>高风险</th><th>未完成工单</th></tr>
+                            <tr><th data-i18n="table.status">状态</th><th data-i18n="table.quantity">数量</th><th data-i18n="table.highRisk">高风险</th><th data-i18n="table.openTickets">未完成工单</th></tr>
                             </thead>
                             <tbody id="statusReportRows"></tbody>
                         </table>
@@ -259,14 +265,14 @@
         <h3 id="modalTitle"></h3>
         <div id="modalBody"></div>
         <div class="dialog-actions">
-            <button type="button" id="modalCancel" class="secondary">取消</button>
-            <button type="submit" id="modalSubmit">保存</button>
+            <button type="button" id="modalCancel" class="secondary" data-i18n="action.cancel">取消</button>
+            <button type="submit" id="modalSubmit" data-i18n="action.save">保存</button>
         </div>
     </form>
 </dialog>
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js"></script>
+<script src="app.js?v=20260518-i18n"></script>
 </body>
 </html>

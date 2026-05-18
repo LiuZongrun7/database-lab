@@ -9,7 +9,7 @@ public class App {
         if (shouldInitializeDatabase()) {
             database.init();
         }
-        new LabWebServer(database, port()).start();
+        new LabWebServer(database, bindHost(), port()).start();
     }
 
     private static int port() {
@@ -18,6 +18,14 @@ public class App {
             return 8080;
         }
         return Integer.parseInt(value);
+    }
+
+    private static String bindHost() {
+        String value = System.getenv("APP_BIND_HOST");
+        if (value == null || value.isBlank()) {
+            return "0.0.0.0";
+        }
+        return value;
     }
 
     private static boolean shouldInitializeDatabase() {
