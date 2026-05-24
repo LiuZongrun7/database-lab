@@ -39,7 +39,7 @@
 重点注释：
 
 - `users`、`labs`、`equipment` 上面的表说明；
-- `reservation_equipment` 和 `reservation_consumables` 的关系表说明；
+- `reservations.equipment_id` 和 `reservation_consumables` 的关系说明；
 - `approvals` 和 `stock_transactions` 为什么单独建表；
 - 三个 view 上面的说明；
 - `Database.init()` 说明为什么 demo 每次重建数据。

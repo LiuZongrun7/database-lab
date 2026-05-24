@@ -30,7 +30,7 @@
 
 - 项目怎么运行；
 - 预约申请怎么创建；
-- 多设备预约为什么要用 `reservation_equipment`；
+- 单设备固定时段预约如何检查冲突；
 - 时间冲突怎么逐台设备判断；
 - 预约耗材需求怎么保存；
 - 为什么要用事务和 `FOR UPDATE`。
@@ -64,7 +64,7 @@
 - 多对多关系怎么实现；
 - 主键和外键是什么；
 - 有哪些约束和视图；
-- `reservation_equipment` 和 `reservation_consumables` 分别解决什么问题；
+- 预约表直接保存设备，`reservation_consumables` 保存耗材需求；
 - 为什么审批和库存流水要单独建表。
 
 ## Member C - 设备与维修模块

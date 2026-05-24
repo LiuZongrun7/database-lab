@@ -9,12 +9,27 @@ let maintenanceCache = [];
 let inventoryCache = [];
 let labReportCache = [];
 let statusReportCache = [];
+let slotCache = [];
+let selectedEquipmentId = '';
+let selectedSlot = null;
 
 const $ = (id) => document.getElementById(id);
 const API_PREFIX = (window.location.pathname === '/lab' || window.location.pathname.startsWith('/lab/')) ? '/lab' : '';
 const LANG_STORAGE_KEY = 'databaseLabLanguage';
 let currentLanguage = localStorage.getItem(LANG_STORAGE_KEY) === 'en' ? 'en' : 'zh';
 const BOOKABLE_EQUIPMENT_STATUSES = new Set(['AVAILABLE', 'RESERVED']);
+const SLOT_LABELS = {
+    zh: {
+        MORNING: '上午',
+        AFTERNOON: '下午',
+        NIGHT: '夜间'
+    },
+    en: {
+        MORNING: 'Morning',
+        AFTERNOON: 'Afternoon',
+        NIGHT: 'Night'
+    }
+};
 
 const ROLE_LABELS = {
     zh: {
@@ -175,7 +190,10 @@ const MESSAGE_LABELS = {
         'Stock changed.': '库存已调整。',
         'This equipment is already booked in the selected time.': '该设备在所选时间已经被预约。',
         'One or more selected equipment items are already booked in the selected time.': '所选设备里至少有一台在该时间段已被预约。',
+        'This time slot is already booked.': '该时段已经被预约。',
         'At least one equipment item is required': '请至少选择一台设备。',
+        'Only one equipment item can be reserved at a time.': '一次只能预约一台设备。',
+        'Reservations must use one fixed time slot: 08:00-14:00, 14:00-20:00, or 20:00-08:00.': '预约必须选择固定时段：08:00-14:00、14:00-20:00 或 20:00-08:00。',
         'Admin permission required': '只有管理员可以执行这个操作。',
         'Purpose is required': '请填写用途。',
         'Start time and end time are required': '请填写开始时间和结束时间。',
@@ -199,7 +217,9 @@ const MESSAGE_LABELS = {
         'Consumable item is required': '请填写耗材名称。',
         'Unit is required': '请选择单位。',
         'Quantity cannot be negative': '数量不能为负数。',
-        'Reorder level cannot be negative': '补货线不能为负数。'
+        'Reorder level cannot be negative': '补货线不能为负数。',
+        'Create a maintenance ticket before setting equipment to maintenance.': '请先提交维修工单，再将设备设为维修中。',
+        'Create equipment as available first, then report a maintenance ticket.': '新增设备请先设为可预约，再提交维修工单。'
     },
     en: {}
 };
@@ -226,17 +246,19 @@ const UI_TEXT = {
         'reservations.subtitle': '提交设备预约申请，并处理待审批预约。',
         'reservation.new': '新建预约申请',
         'reservation.selectEquipment': '选择设备',
-        'reservation.selectEquipmentHint': '可以勾选多台设备一起提交预约。',
+        'reservation.selectEquipmentHint': '先选择一台设备，再从下方时间表选择可预约时段。',
         'reservation.time': '预约时间',
-        'reservation.timeHint': '选择开始和结束时间。',
+        'reservation.timeHint': '绿色为可预约，红色为已占用或不可预约。时间表可横向滚动。',
         'reservation.purposePlaceholder': '简单说明为什么要使用这台设备',
         'reservation.consumables': '耗材需求',
         'reservation.consumablesHint': '不需要耗材可以留空；需要时添加物品和数量。',
         'reservation.noConsumables': '本次预约暂不需要耗材。',
-        'reservation.selectedCount': '已选 {count} 台',
-        'reservation.notSelected': '未选择',
-        'reservation.selectedSummary': '已选：{names}',
-        'reservation.noSelectionSummary': '未选择设备，展开后可勾选一台或多台设备。',
+        'reservation.selectedSummary': '已选择：{name}',
+        'reservation.noSelectionSummary': '请选择一台可预约设备。',
+        'reservation.slotLoading': '正在加载可预约时段...',
+        'reservation.slotPrompt': '请选择设备后查看可预约时段。',
+        'reservation.slotSelected': '已选择：{date} {slot}（{start} - {end}）',
+        'reservation.noSlotSelected': '请选择一个绿色可预约时段。',
         'reservation.noConsumableChoices': '暂无可申请耗材。',
         'reservation.stockMeta': '库存 {quantity} {unit}',
         'maintenance.title': '维修工单',
@@ -350,6 +372,10 @@ const UI_TEXT = {
         'common.none': '无',
         'common.notAssigned': '未分配',
         'common.normal': '正常',
+        'common.available': '可预约',
+        'common.booked': '已占用',
+        'common.past': '已过期',
+        'common.unavailable': '不可约',
         'workspace.label': '{role}工作台',
         'workspace.ADMIN.title': '总览实验室资源与运行状态',
         'workspace.ADMIN.subtitle': '管理设备台账、预约流转、维修进度和耗材库存。',
@@ -395,17 +421,19 @@ const UI_TEXT = {
         'reservations.subtitle': 'Submit equipment reservation requests and process pending approvals.',
         'reservation.new': 'New Reservation Request',
         'reservation.selectEquipment': 'Select Equipment',
-        'reservation.selectEquipmentHint': 'Select one or more devices for the same request.',
+        'reservation.selectEquipmentHint': 'Choose one device first, then select an available time block below.',
         'reservation.time': 'Reservation Time',
-        'reservation.timeHint': 'Choose the start and end time.',
+        'reservation.timeHint': 'Green blocks are available; red blocks are booked or unavailable. The schedule scrolls horizontally.',
         'reservation.purposePlaceholder': 'Briefly explain why you need this equipment',
         'reservation.consumables': 'Consumable Needs',
         'reservation.consumablesHint': 'Leave blank if none are needed, or add items and quantities.',
         'reservation.noConsumables': 'No consumables are needed for this reservation.',
-        'reservation.selectedCount': '{count} selected',
-        'reservation.notSelected': 'None selected',
-        'reservation.selectedSummary': 'Selected: {names}',
-        'reservation.noSelectionSummary': 'No equipment selected. Expand this section to select one or more devices.',
+        'reservation.selectedSummary': 'Selected: {name}',
+        'reservation.noSelectionSummary': 'Choose one available device.',
+        'reservation.slotLoading': 'Loading available time blocks...',
+        'reservation.slotPrompt': 'Choose equipment to view available time blocks.',
+        'reservation.slotSelected': 'Selected: {date} {slot} ({start} - {end})',
+        'reservation.noSlotSelected': 'Choose one green available time block.',
         'reservation.noConsumableChoices': 'No consumables are available to request.',
         'reservation.stockMeta': 'Stock {quantity} {unit}',
         'maintenance.title': 'Maintenance Tickets',
@@ -519,6 +547,10 @@ const UI_TEXT = {
         'common.none': 'None',
         'common.notAssigned': 'Not assigned',
         'common.normal': 'Normal',
+        'common.available': 'Available',
+        'common.booked': 'Booked',
+        'common.past': 'Past',
+        'common.unavailable': 'Unavailable',
         'workspace.label': '{role} Workspace',
         'workspace.ADMIN.title': 'Overview of lab resources and operations',
         'workspace.ADMIN.subtitle': 'Manage equipment records, reservation workflows, repairs, and consumable inventory.',
@@ -563,7 +595,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('equipmentSearch').addEventListener('submit', searchEquipment);
     $('resetEquipmentSearch').addEventListener('click', () => loadEquipment());
     $('addEquipmentButton').addEventListener('click', () => openEquipmentForm());
-    $('toggleEquipmentPicker').addEventListener('click', toggleEquipmentPicker);
     $('reservationForm').addEventListener('submit', createReservation);
     $('addConsumableRequest').addEventListener('click', () => addConsumableRequestRow());
     $('refreshReservations').addEventListener('click', loadReservations);
@@ -577,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
 
-    initializeReservationTimeInputs();
+    updateSlotSummary();
     applyStaticTranslations();
     updateUserBadge();
 });
@@ -745,24 +776,25 @@ async function loadTechnicians() {
 function renderEquipmentPicker() {
     const container = $('reservationEquipment');
     if (!container) return;
-    // Keep existing selections when the equipment table is refreshed after search or status updates.
-    const selectedBefore = new Set(selectedEquipmentIds().map(String));
-    container.innerHTML = equipmentCache.map(equipment => equipmentChoiceHtml(equipment, selectedBefore)).join('');
+    if (selectedEquipmentId && !equipmentCache.some(item => String(item.id) === String(selectedEquipmentId))) {
+        clearSelectedEquipment();
+    }
+    container.innerHTML = equipmentCache.map(equipment => equipmentChoiceHtml(equipment)).join('');
     container.querySelectorAll('input[name="equipmentChoice"]').forEach(input => {
-        input.addEventListener('change', updateEquipmentSelectionSummary);
+        input.addEventListener('change', () => selectReservationEquipment(input.value));
     });
     updateEquipmentSelectionSummary();
 }
 
-function equipmentChoiceHtml(equipment, selectedIds) {
+function equipmentChoiceHtml(equipment) {
     const bookable = BOOKABLE_EQUIPMENT_STATUSES.has(equipment.status);
-    const checked = bookable && selectedIds.has(String(equipment.id));
+    const checked = bookable && String(selectedEquipmentId) === String(equipment.id);
     const className = ['equipment-choice'];
     if (checked) className.push('selected');
     if (!bookable) className.push('disabled');
     return `
         <label class="${className.join(' ')}">
-            <input type="checkbox" name="equipmentChoice" value="${equipment.id}" ${checked ? 'checked' : ''} ${bookable ? '' : 'disabled'}>
+            <input type="radio" name="equipmentChoice" value="${equipment.id}" ${checked ? 'checked' : ''} ${bookable ? '' : 'disabled'}>
             <span class="equipment-choice-main">
                 <strong>${escapeHtml(label(EQUIPMENT_NAME_LABELS, equipment.name))}</strong>
                 <span>${escapeHtml(equipment.assetTag)} / ${escapeHtml(equipment.labCode)}</span>
@@ -776,9 +808,16 @@ function equipmentChoiceHtml(equipment, selectedIds) {
 }
 
 function selectedEquipmentIds() {
-    return Array.from(document.querySelectorAll('#reservationEquipment input[name="equipmentChoice"]:checked'))
-        .filter(input => !input.disabled)
-        .map(input => input.value);
+    return selectedEquipmentId ? [String(selectedEquipmentId)] : [];
+}
+
+function clearSelectedEquipment() {
+    selectedEquipmentId = '';
+    selectedSlot = null;
+    slotCache = [];
+    $('reservationEquipmentIds').value = '';
+    $('reservationStartTime').value = '';
+    $('reservationEndTime').value = '';
 }
 
 function updateEquipmentSelectionSummary() {
@@ -787,30 +826,118 @@ function updateEquipmentSelectionSummary() {
         input.closest('.equipment-choice')?.classList.toggle('selected', input.checked);
     });
 
-    const ids = selectedEquipmentIds();
-    $('reservationEquipmentIds').value = ids.join(',');
-    $('selectedEquipmentCount').textContent = ids.length ? t('reservation.selectedCount', { count: ids.length }) : t('reservation.notSelected');
-
-    const selectedNames = ids
-        .map(id => equipmentCache.find(item => String(item.id) === String(id)))
-        .filter(Boolean)
-        .map(item => currentLanguage === 'zh'
-            ? `${label(EQUIPMENT_NAME_LABELS, item.name)}（${item.assetTag}）`
-            : `${label(EQUIPMENT_NAME_LABELS, item.name)} (${item.assetTag})`);
-    $('selectedEquipmentSummary').textContent = selectedNames.length
-        ? t('reservation.selectedSummary', { names: selectedNames.join(currentLanguage === 'zh' ? '、' : ', ') })
-        : t('reservation.noSelectionSummary');
+    $('reservationEquipmentIds').value = selectedEquipmentId || '';
+    updateSlotSummary();
 }
 
-function toggleEquipmentPicker() {
-    const section = $('reservationEquipmentSection');
-    const button = $('toggleEquipmentPicker');
-    if (!section || !button) return;
-    // The collapsed state keeps the reservation form short while still showing what was selected.
-    const collapsed = section.classList.toggle('collapsed');
-    button.innerHTML = collapsed
-        ? `<i class="icon-chevron-down"></i> ${escapeHtml(t('action.expand'))}`
-        : `<i class="icon-chevron-up"></i> ${escapeHtml(t('action.collapse'))}`;
+async function selectReservationEquipment(equipmentId) {
+    selectedEquipmentId = String(equipmentId || '');
+    selectedSlot = null;
+    slotCache = [];
+    $('reservationEquipmentIds').value = selectedEquipmentId;
+    $('reservationStartTime').value = '';
+    $('reservationEndTime').value = '';
+    updateEquipmentSelectionSummary();
+    await loadReservationSlots();
+}
+
+async function loadReservationSlots() {
+    const board = $('reservationSlots');
+    if (!board) return;
+    if (!selectedEquipmentId) {
+        board.innerHTML = '';
+        updateSlotSummary();
+        return;
+    }
+    $('slotSummary').textContent = t('reservation.slotLoading');
+    const startDate = dateOnlyValue(new Date());
+    slotCache = await get(`/api/reservations/slots?equipmentId=${encodeURIComponent(selectedEquipmentId)}&startDate=${encodeURIComponent(startDate)}&days=7`);
+    renderReservationSlots();
+}
+
+function renderReservationSlots() {
+    const board = $('reservationSlots');
+    if (!board) return;
+    if (!selectedEquipmentId) {
+        board.innerHTML = '';
+        updateSlotSummary();
+        return;
+    }
+    const dates = Array.from(new Set(slotCache.map(slot => slot.date)));
+    board.innerHTML = dates.map(date => `
+        <div class="slot-day">
+            <div class="slot-date">${escapeHtml(formatSlotDate(date))}</div>
+            <div class="slot-list">
+                ${slotCache.filter(slot => slot.date === date).map(slotHtml).join('')}
+            </div>
+        </div>
+    `).join('');
+    board.querySelectorAll('[data-slot-index]').forEach(button => {
+        button.addEventListener('click', () => selectReservationSlot(Number(button.dataset.slotIndex)));
+    });
+    updateSlotSummary();
+}
+
+function slotHtml(slot) {
+    const index = slotCache.indexOf(slot);
+    const selected = selectedSlot
+        && selectedSlot.startTime === slot.startTime
+        && selectedSlot.endTime === slot.endTime;
+    const className = ['slot-block', slot.available ? 'available' : 'unavailable'];
+    if (selected) className.push('selected');
+    const labelText = label(SLOT_LABELS, slot.slot);
+    const timeText = `${shortTime(slot.startTime)} - ${shortTime(slot.endTime)}`;
+    return `
+        <button type="button" class="${className.join(' ')}" data-slot-index="${index}" ${slot.available ? '' : 'disabled'}>
+            <span>${escapeHtml(labelText)}</span>
+            <strong>${escapeHtml(timeText)}</strong>
+            <em>${escapeHtml(slot.available ? t('common.available') : slotReasonText(slot.reason))}</em>
+        </button>
+    `;
+}
+
+function selectReservationSlot(index) {
+    const slot = slotCache[index];
+    if (!slot || !slot.available) return;
+    selectedSlot = slot;
+    $('reservationStartTime').value = slot.startTime;
+    $('reservationEndTime').value = slot.endTime;
+    renderReservationSlots();
+}
+
+function updateSlotSummary() {
+    const summary = $('slotSummary');
+    if (!summary) return;
+    if (!selectedEquipmentId) {
+        summary.textContent = t('reservation.slotPrompt');
+        return;
+    }
+    if (!selectedSlot) {
+        const equipment = equipmentCache.find(item => String(item.id) === String(selectedEquipmentId));
+        summary.textContent = equipment
+            ? t('reservation.selectedSummary', { name: equipmentDisplayName(equipment) }) + '；' + t('reservation.noSlotSelected')
+            : t('reservation.noSlotSelected');
+        return;
+    }
+    summary.textContent = t('reservation.slotSelected', {
+        date: formatSlotDate(selectedSlot.date),
+        slot: label(SLOT_LABELS, selectedSlot.slot),
+        start: shortTime(selectedSlot.startTime),
+        end: shortTime(selectedSlot.endTime)
+    });
+}
+
+function equipmentDisplayName(equipment) {
+    return currentLanguage === 'zh'
+        ? `${label(EQUIPMENT_NAME_LABELS, equipment.name)}（${equipment.assetTag}）`
+        : `${label(EQUIPMENT_NAME_LABELS, equipment.name)} (${equipment.assetTag})`;
+}
+
+function slotReasonText(reason) {
+    if (reason === 'BOOKED') return t('common.booked');
+    if (reason === 'PAST') return t('common.past');
+    if (reason) return label(STATUS_LABELS, reason);
+    return t('common.unavailable');
 }
 
 async function openEquipmentForm(equipmentId = null) {
@@ -881,96 +1008,44 @@ async function createReservation(event) {
         showToast('At least one equipment item is required', true);
         return;
     }
-    const normalizedTimes = normalizedReservationTimes();
-    if (!normalizedTimes) {
+    if (!selectedSlot) {
+        showToast(t('reservation.noSlotSelected'), true);
         return;
     }
-    data.set('startTime', normalizedTimes.startTime);
-    data.set('endTime', normalizedTimes.endTime);
-    // The backend expects a comma list for equipment and id:quantity pairs for consumables.
-    data.set('equipmentIds', equipmentIds.join(','));
+    data.set('startTime', selectedSlot.startTime);
+    data.set('endTime', selectedSlot.endTime);
+    // The backend expects one equipment id and id:quantity pairs for consumables.
+    data.set('equipmentIds', equipmentIds[0]);
     data.set('consumableRequests', collectConsumableRequests());
     data.append('userId', currentUser.id);
     const result = await post('/api/reservations/create', data);
     showToast(result.message, !result.ok);
     if (result.ok) {
         renderConsumableRequestEditor([]);
+        selectedSlot = null;
+        await loadReservationSlots();
         await loadReservations();
     }
 }
 
-function initializeReservationTimeInputs() {
-    const startInput = document.querySelector('input[name="startTime"]');
-    const endInput = document.querySelector('input[name="endTime"]');
-    if (!startInput || !endInput) return;
-
-    // Native datetime-local controls are easier for users than typing a date format by hand.
-    const start = roundedFutureDate(1);
-    const end = new Date(start);
-    end.setHours(end.getHours() + 2);
-    startInput.value = dateTimeLocalValue(start);
-    endInput.value = dateTimeLocalValue(end);
-    startInput.min = dateTimeLocalValue(roundedFutureDate(0));
-    endInput.min = startInput.value;
-
-    startInput.addEventListener('change', () => syncEndTimeWithStart());
-    endInput.addEventListener('change', () => syncEndTimeWithStart(false));
-}
-
-function syncEndTimeWithStart(adjustEnd = true) {
-    const startInput = document.querySelector('input[name="startTime"]');
-    const endInput = document.querySelector('input[name="endTime"]');
-    const start = parseDateTimeLocal(startInput?.value);
-    const end = parseDateTimeLocal(endInput?.value);
-    if (!startInput || !endInput || !start) return;
-
-    endInput.min = startInput.value;
-    if (adjustEnd && (!end || end <= start)) {
-        const nextEnd = new Date(start);
-        nextEnd.setHours(nextEnd.getHours() + 2);
-        endInput.value = dateTimeLocalValue(nextEnd);
-    }
-}
-
-function normalizedReservationTimes() {
-    const startInput = document.querySelector('input[name="startTime"]');
-    const endInput = document.querySelector('input[name="endTime"]');
-    const start = parseDateTimeLocal(startInput?.value);
-    const end = parseDateTimeLocal(endInput?.value);
-    if (!start || !end) {
-        showToast('Start time and end time are required', true);
-        return null;
-    }
-    if (end <= start) {
-        showToast('End time must be after start time', true);
-        return null;
-    }
-    return {
-        startTime: startInput.value.replace('T', ' '),
-        endTime: endInput.value.replace('T', ' ')
-    };
-}
-
-function roundedFutureDate(hoursAhead) {
-    const date = new Date();
-    date.setHours(date.getHours() + hoursAhead);
-    date.setSeconds(0, 0);
-    const remainder = date.getMinutes() % 30;
-    if (remainder !== 0) {
-        date.setMinutes(date.getMinutes() + (30 - remainder));
-    }
-    return date;
-}
-
-function dateTimeLocalValue(date) {
+function dateOnlyValue(date) {
     const pad = value => String(value).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function parseDateTimeLocal(value) {
-    if (!value) return null;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
+function formatSlotDate(value) {
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(currentLanguage === 'zh' ? 'zh-CN' : 'en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        weekday: 'short'
+    });
+}
+
+function shortTime(value) {
+    const parts = String(value || '').split(' ');
+    return parts[1] || value || '';
 }
 
 async function loadReservations() {
@@ -1155,18 +1230,18 @@ async function loadMaintenance() {
     const rows = await get('/api/maintenance');
     maintenanceCache = rows;
     const canUpdate = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'TECHNICIAN');
-    fillRows('maintenanceRows', rows, t => `
+    fillRows('maintenanceRows', rows, ticket => `
         <tr>
-            <td>${t.id}</td>
-            <td>${escapeHtml(t.assetTag)}</td>
-            <td>${escapeHtml(label(EQUIPMENT_NAME_LABELS, t.equipmentName))}</td>
-            <td>${escapeHtml(t.reporterName)}</td>
-            <td>${escapeHtml(translatePersonText(t.technicianName))}</td>
-            <td>${escapeHtml(label(DATA_TEXT_LABELS, t.title))}</td>
-            <td>${escapeHtml(label(RISK_LABELS, t.priority))}</td>
-            <td>${badge(t.status)}</td>
-            <td>${escapeHtml(t.reportedAt)}</td>
-            <td>${canUpdate ? `<button type="button" onclick="openUpdateTicket(${t.id})"><i class="icon-edit"></i> ${escapeHtml(t('action.update'))}</button>` : ''}</td>
+            <td>${ticket.id}</td>
+            <td>${escapeHtml(ticket.assetTag)}</td>
+            <td>${escapeHtml(label(EQUIPMENT_NAME_LABELS, ticket.equipmentName))}</td>
+            <td>${escapeHtml(ticket.reporterName)}</td>
+            <td>${escapeHtml(translatePersonText(ticket.technicianName))}</td>
+            <td>${escapeHtml(label(DATA_TEXT_LABELS, ticket.title))}</td>
+            <td>${escapeHtml(label(RISK_LABELS, ticket.priority))}</td>
+            <td>${badge(ticket.status)}</td>
+            <td>${escapeHtml(ticket.reportedAt)}</td>
+            <td>${canUpdate ? `<button type="button" onclick="openUpdateTicket(${ticket.id})"><i class="icon-edit"></i> ${escapeHtml(t('action.update'))}</button>` : ''}</td>
         </tr>
     `);
     renderRoleWorkspace();
@@ -1474,6 +1549,7 @@ function rerenderCurrentData() {
             </tr>
         `);
         renderEquipmentPicker();
+        renderReservationSlots();
     }
     if (courseCache.length > 0) {
         const select = $('reservationCourse');

@@ -21,11 +21,11 @@ The most important part is the reservation transaction. In `ReservationService.r
 
 1. validates that the end time is after the start time;
 2. starts a database transaction;
-3. locks each selected equipment row with `FOR UPDATE`;
-4. checks whether each equipment status allows booking;
-5. checks whether another pending or approved reservation overlaps the requested time for any selected equipment item;
+3. locks the selected equipment row with `FOR UPDATE`;
+4. checks whether the equipment status allows booking;
+5. checks whether another pending or approved reservation overlaps the requested time for the selected equipment item;
 6. inserts a new reservation with `PENDING` status;
-7. inserts rows into `reservation_equipment`;
+7. stores the selected equipment in `reservations.equipment_id`;
 8. inserts optional consumable needs into `reservation_consumables`;
 9. commits if everything is valid, otherwise rolls back.
 
@@ -56,9 +56,9 @@ Q: Why is the reservation first set to `PENDING`?
 
 A: Some equipment can be high-risk or shared between courses, so a teacher or admin should approve it before use.
 
-Q: Why is there a `reservation_equipment` table?
+Q: Why does the reservation table contain `equipment_id`?
 
-A: One reservation can include several equipment items. A link table is clearer than a single `equipment_id` column.
+A: The current design keeps each reservation to one equipment item, so `reservations.equipment_id` is simpler and easier to explain in the ER diagram.
 
 Q: Does a consumable request immediately reduce stock?
 

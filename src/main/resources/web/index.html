@@ -102,34 +102,29 @@
             </div>
             <form id="reservationForm" class="card-form">
                 <h3 data-i18n="reservation.new">新建预约申请</h3>
-                <div id="reservationEquipmentSection" class="wide request-section equipment-section collapsed">
+                <div class="wide request-section equipment-section">
                     <div class="request-section-head">
                         <div>
                             <h3 data-i18n="reservation.selectEquipment">选择设备</h3>
-                            <p data-i18n="reservation.selectEquipmentHint">可以勾选多台设备一起提交预约。</p>
-                        </div>
-                        <div class="section-actions">
-                            <span id="selectedEquipmentCount" class="selection-count">未选择</span>
-                            <button type="button" id="toggleEquipmentPicker" class="secondary small-action"><i class="icon-chevron-down"></i> 展开选择</button>
+                            <p data-i18n="reservation.selectEquipmentHint">先选择一台设备，再从下方时间表选择可预约时段。</p>
                         </div>
                     </div>
                     <input type="hidden" name="equipmentIds" id="reservationEquipmentIds">
                     <div id="reservationEquipment" class="equipment-choice-list"></div>
-                    <div id="selectedEquipmentSummary" class="selection-summary">请选择至少一台设备</div>
                 </div>
-                <label><span data-i18n="form.course">课程</span> <select name="courseId" id="reservationCourse"></select></label>
                 <div class="wide request-section time-range">
                     <div class="request-section-head">
                         <div>
                             <h3 data-i18n="reservation.time">预约时间</h3>
-                            <p data-i18n="reservation.timeHint">选择开始和结束时间。</p>
+                            <p data-i18n="reservation.timeHint">绿色为可预约，红色为已占用或不可预约。时间表可横向滚动。</p>
                         </div>
                     </div>
-                    <div class="time-fields">
-                        <label><span data-i18n="form.startTime">开始时间</span> <input name="startTime" type="datetime-local" step="900" required></label>
-                        <label><span data-i18n="form.endTime">结束时间</span> <input name="endTime" type="datetime-local" step="900" required></label>
-                    </div>
+                    <input type="hidden" name="startTime" id="reservationStartTime">
+                    <input type="hidden" name="endTime" id="reservationEndTime">
+                    <div id="slotSummary" class="selection-summary">请选择设备后查看可预约时段。</div>
+                    <div id="reservationSlots" class="slot-board"></div>
                 </div>
+                <label><span data-i18n="form.course">课程</span> <select name="courseId" id="reservationCourse"></select></label>
                 <label class="wide"><span data-i18n="form.purpose">用途</span> <input name="purpose" placeholder="简单说明为什么要使用这台设备" data-i18n-placeholder="reservation.purposePlaceholder" required></label>
                 <div class="wide request-section">
                     <div class="request-section-head">
@@ -273,6 +268,6 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=20260518-i18n"></script>
+<script src="app.js?v=20260524-slots"></script>
 </body>
 </html>

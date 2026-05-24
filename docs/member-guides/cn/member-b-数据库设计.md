@@ -19,7 +19,7 @@
 - 用户和角色：`users`
 - 实验室和设备：`labs`, `equipment`
 - 课程和访问权限：`courses`, `course_members`, `equipment_course_access`
-- 预约和审批：`reservations`, `reservation_equipment`, `reservation_consumables`, `approvals`
+- 预约和审批：`reservations`, `reservation_consumables`, `approvals`
 - 维修：`maintenance_tickets`, `maintenance_updates`
 - 库存：`consumables`, `stock_transactions`
 
@@ -27,7 +27,7 @@
 
 - 用户和课程：用 `course_members`
 - 设备和课程：用 `equipment_course_access`
-- 预约和设备：用 `reservation_equipment`
+- 预约和设备：`reservations.equipment_id` 直接引用设备
 - 预约和耗材需求：用 `reservation_consumables`
 
 数据库里用了：
@@ -45,7 +45,7 @@
 - 打开 `schema.sql`，看懂每张表。
 - 对照 ER 图和 SQL 表。
 - 能解释为什么 `approvals` 单独建表。
-- 能解释为什么 `reservation_equipment` 单独建表。
+- 能解释为什么预约表直接保存 `equipment_id`。
 - 能解释为什么 `reservation_consumables` 只记录需求，不直接改库存。
 - 能解释为什么 `stock_transactions` 单独建表。
 - 能说出至少两个约束例子。

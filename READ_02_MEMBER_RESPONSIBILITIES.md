@@ -29,7 +29,7 @@ Must be able to explain:
 
 - how to run the project;
 - how a reservation request is created;
-- why `reservation_equipment` is needed for multi-equipment bookings;
+- how single-equipment fixed-slot reservations are checked;
 - how overlapping time is checked for each selected equipment item;
 - how reservation consumable requests are stored;
 - why transaction and `FOR UPDATE` are used.
@@ -62,7 +62,7 @@ Must be able to explain:
 - many-to-many relationships;
 - primary keys and foreign keys;
 - constraints and views;
-- why `reservation_equipment` and `reservation_consumables` are separate tables;
+- why `equipment_course_access` and `reservation_consumables` are separate tables;
 - why approvals and stock transactions are separate tables.
 
 ## Member C - Equipment and Maintenance

@@ -27,7 +27,7 @@
 4. 检查设备状态是否允许预约；
 5. 检查同一个设备在同一时间段有没有冲突；
 6. 插入一条 `PENDING` 状态的预约；
-7. 把多台设备写入 `reservation_equipment`；
+7. 把选中的单台设备直接写入 `reservations.equipment_id`；
 8. 把随预约提交的耗材需求写入 `reservation_consumables`；
 9. 成功就 commit，失败就 rollback。
 
@@ -59,9 +59,9 @@ A: 因为检查设备状态、检查时间冲突和插入预约应该作为一�
 
 A: 因为有些设备比较重要或者高风险，需要老师或管理员审批后才能正式使用。
 
-### Q: 为什么预约和设备之间不用一个 `equipment_id` 字段？
+### Q: 为什么现在预约表直接使用 `equipment_id`？
 
-A: 因为现在一次预约可以选择多台设备，所以用 `reservation_equipment` 做多对多关联。
+A: 因为现在一次预约只选择一台设备，直接用 `reservations.equipment_id` 更简单，也更容易画 ER 图。
 
 ### Q: 预约里的耗材需求会不会直接扣库存？
 

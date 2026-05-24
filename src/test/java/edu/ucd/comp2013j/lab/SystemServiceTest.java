@@ -75,14 +75,68 @@ class SystemServiceTest {
     @Test
     void reservationConflictIsRejected() {
         User student = userDao.login("student1", "student123").orElseThrow();
-        LocalDateTime start = LocalDateTime.of(2026, 5, 20, 11, 0);
-        LocalDateTime end = LocalDateTime.of(2026, 5, 20, 12, 30);
+        LocalDateTime start = java.time.LocalDate.now().plusDays(3).atTime(8, 0);
+        LocalDateTime end = java.time.LocalDate.now().plusDays(3).atTime(14, 0);
+
+        reservationService.requestReservation(List.of(5), student.getId(), 1, start, end,
+                "First booking", Map.of());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> reservationService.requestReservation(List.of(3), student.getId(), 1, start, end,
+                () -> reservationService.requestReservation(List.of(5), student.getId(), 1, start, end,
                         "Overlapping test", Map.of()));
 
         assertTrue(ex.getMessage().contains("already booked"));
+    }
+
+    @Test
+    void reservationMustUseFixedTimeSlot() {
+        User student = userDao.login("student1", "student123").orElseThrow();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> reservationService.requestReservation(List.of(5), student.getId(), 1,
+                        LocalDateTime.of(2026, 5, 25, 9, 0),
+                        LocalDateTime.of(2026, 5, 25, 12, 0),
+                        "Custom time test", Map.of()));
+
+        assertTrue(ex.getMessage().contains("fixed time slot"));
+    }
+
+    @Test
+    void reservationAllowsOnlyOneEquipmentItem() {
+        User student = userDao.login("student1", "student123").orElseThrow();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> reservationService.requestReservation(List.of(3, 5), student.getId(), 1,
+                        LocalDateTime.of(2026, 5, 25, 8, 0),
+                        LocalDateTime.of(2026, 5, 25, 14, 0),
+                        "Multi equipment test", Map.of()));
+
+        assertTrue(ex.getMessage().contains("Only one equipment"));
+    }
+
+    @Test
+    void slotAvailabilityShowsBookedSeedSlot() {
+        User student = userDao.login("student1", "student123").orElseThrow();
+        java.time.LocalDate date = java.time.LocalDate.now().plusDays(4);
+
+        reservationService.requestReservation(List.of(5), student.getId(), 1,
+                date.atTime(8, 0),
+                date.atTime(14, 0),
+                "Slot availability test", Map.of());
+
+        List<Map<String, ?>> slots = reservationService.fixedSlotAvailability(
+                5,
+                date,
+                1
+        );
+
+        Map<String, ?> morning = slots.stream()
+                .filter(slot -> "MORNING".equals(slot.get("slot")))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(false, morning.get("available"));
+        assertEquals("BOOKED", morning.get("reason"));
     }
 
     @Test
@@ -138,6 +192,23 @@ class SystemServiceTest {
                 .orElseThrow()
                 .getStatus();
         assertEquals("MAINTENANCE", newStatus);
+    }
+
+    @Test
+    void maintenanceDaoFindsActiveTicketForEquipment() {
+        Equipment seedTicketEquipment = equipmentDao.findAll().stream()
+                .filter(e -> e.getAssetTag().equals("BIO-ECG-004"))
+                .findFirst()
+                .orElseThrow();
+        Equipment availableEquipment = equipmentDao.findAll().stream()
+                .filter(e -> e.getAssetTag().equals("NET-IOT-005"))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(new edu.ucd.comp2013j.lab.dao.MaintenanceDao(database)
+                .hasActiveTicketForEquipment(seedTicketEquipment.getId()));
+        assertFalse(new edu.ucd.comp2013j.lab.dao.MaintenanceDao(database)
+                .hasActiveTicketForEquipment(availableEquipment.getId()));
     }
 
     @Test

@@ -2,6 +2,7 @@ target/
 *.mv.db
 *.trace.db
 *.zip
+backups/
 .DS_Store
 .env
 *.log

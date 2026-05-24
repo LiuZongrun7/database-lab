@@ -42,6 +42,24 @@ public class MaintenanceDao {
         }
     }
 
+    public boolean hasActiveTicketForEquipment(int equipmentId) {
+        String sql = """
+                SELECT COUNT(*) AS active_count
+                FROM maintenance_tickets
+                WHERE equipment_id = ? AND status IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS')
+                """;
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, equipmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt("active_count") > 0;
+            }
+        } catch (SQLException ex) {
+            throw Db.fail(ex);
+        }
+    }
+
     public int create(Connection connection, int equipmentId, int reporterId, String title,
                       String description, String priority) throws SQLException {
         String sql = """

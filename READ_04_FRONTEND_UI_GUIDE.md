@@ -148,7 +148,7 @@ Browser form
 
 ## Report Paragraph Example
 
-The system includes a web front-end implemented with HTML, CSS, and JavaScript. The front-end is served by a lightweight Java HTTP server and communicates with the back-end through JSON-style API endpoints. The main web pages include login and student registration, equipment catalogue and admin equipment management, reservation management with multi-equipment selection, maintenance tickets, consumable inventory, and reports. This satisfies the assignment's user interface requirement because users can operate the database system through a browser instead of using SQL directly.
+The system includes a web front-end implemented with HTML, CSS, and JavaScript. The front-end is served by a lightweight Java HTTP server and communicates with the back-end through JSON-style API endpoints. The main web pages include login and student registration, equipment catalogue and admin equipment management, reservation management with single-equipment fixed-slot scheduling, maintenance tickets, consumable inventory, and reports. This satisfies the assignment's user interface requirement because users can operate the database system through a browser instead of using SQL directly.
 
 ## Screenshots To Put In The Report
 
@@ -158,7 +158,7 @@ Take screenshots of:
 2. Main web dashboard.
 3. Equipment tab.
 4. Reservation form.
-5. Multi-equipment picker summary.
+5. Fixed-slot reservation schedule.
 6. Approval buttons.
 7. Maintenance ticket update dialog.
 8. Inventory page with add consumable button.

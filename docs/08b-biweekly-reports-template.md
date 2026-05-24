@@ -49,11 +49,11 @@ For the final stage, we will focus on testing, documentation, and presentation. 
 
 ### Member A
 
-I implemented and tested the reservation workflow, including request creation, multi-equipment selection, consumable requests, and approval handling. I paid special attention to the overlapping time condition because it is an important database logic problem. I also helped integrate the UI tabs and prepared run instructions.
+I implemented and tested the reservation workflow, including request creation, single-equipment fixed-slot scheduling, consumable requests, and approval handling. I paid special attention to the overlapping time condition because it is an important database logic problem. I also helped integrate the UI tabs and prepared run instructions.
 
 ### Member B
 
-I finalised the database schema and seed data. I added constraints, indexes, views, and link tables such as `reservation_equipment` and `reservation_consumables` to support the main system functions. I also checked that the ER diagram matches the SQL schema and prepared explanations for the relational mapping.
+I finalised the database schema and seed data. I added constraints, indexes, views, and link tables such as `course_members`, `equipment_course_access`, and `reservation_consumables` to support the main system functions. I also checked that the ER diagram matches the SQL schema and prepared explanations for the relational mapping.
 
 ### Member C
 

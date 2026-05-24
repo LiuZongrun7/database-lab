@@ -129,7 +129,7 @@ Validation:
 
 Transaction:
 - Uses one transaction for status check, conflict check, and insert.
-- Writes selected equipment to `reservation_equipment`.
+- Writes the selected equipment to `reservations.equipment_id`.
 - Writes optional consumable needs to `reservation_consumables`.
 
 ### `ReservationService.decideReservation(...)`

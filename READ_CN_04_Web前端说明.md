@@ -155,7 +155,7 @@ HTML 表单 / JavaScript
 
 ## 报告里可用的一段话
 
-The system includes a web front-end implemented with HTML, CSS, and JavaScript. The front-end is served by a lightweight Java HTTP server and communicates with the back-end through API endpoints. The main web pages include login and student registration, equipment catalogue and admin equipment management, reservation management with multi-equipment selection, maintenance tickets, inventory, and reports. This satisfies the assignment's user interface requirement because users can operate the database system through a browser instead of using SQL directly.
+The system includes a web front-end implemented with HTML, CSS, and JavaScript. The front-end is served by a lightweight Java HTTP server and communicates with the back-end through API endpoints. The main web pages include login and student registration, equipment catalogue and admin equipment management, reservation management with single-equipment fixed-slot scheduling, maintenance tickets, inventory, and reports. This satisfies the assignment's user interface requirement because users can operate the database system through a browser instead of using SQL directly.
 
 ## Report 截图建议
 
@@ -165,7 +165,7 @@ The system includes a web front-end implemented with HTML, CSS, and JavaScript. 
 2. 主页面；
 3. Equipment 页面；
 4. Reservation 表单；
-5. 多设备选择和已选摘要；
+5. 固定时段预约时间表；
 6. 审批按钮；
 7. Maintenance 更新弹窗；
 8. Inventory 页面和新增耗材入口；

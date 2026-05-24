@@ -19,7 +19,7 @@ The database has these main groups:
 - User and permission data: `users`.
 - Laboratory and equipment data: `labs`, `equipment`.
 - Course access data: `courses`, `course_members`, `equipment_course_access`.
-- Reservation data: `reservations`, `reservation_equipment`, `reservation_consumables`, `approvals`.
+- Reservation data: `reservations`, `reservation_consumables`, `approvals`.
 - Maintenance data: `maintenance_tickets`, `maintenance_updates`.
 - Inventory data: `consumables`, `stock_transactions`.
 
@@ -27,7 +27,7 @@ Two many-to-many examples:
 
 - A course has many users and a user can join many courses, so we use `course_members`.
 - Equipment can be used by many courses and a course can access many equipment items, so we use `equipment_course_access`.
-- A reservation can include several equipment items, so we use `reservation_equipment`.
+- Each reservation references one equipment item directly through `reservations.equipment_id`.
 - A reservation can request several consumables with quantities, so we use `reservation_consumables`.
 
 The schema uses:

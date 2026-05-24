@@ -20,7 +20,7 @@ Content to include:
 
 Suggested paragraph:
 
-The system is designed for a university laboratory environment where different courses and users share expensive equipment. It supports student registration, equipment browsing, multi-equipment reservation requests, approval decisions, maintenance tickets, consumable stock management, and management reports. The project is implemented with a Web front-end using HTML, CSS, and JavaScript, plus a Java JDBC back-end and a MySQL database.
+The system is designed for a university laboratory environment where different courses and users share expensive equipment. It supports student registration, equipment browsing, single-equipment fixed-slot reservation requests, approval decisions, maintenance tickets, consumable stock management, and management reports. The project is implemented with a Web front-end using HTML, CSS, and JavaScript, plus a Java JDBC back-end and a MySQL database.
 
 ## 2. Requirements
 

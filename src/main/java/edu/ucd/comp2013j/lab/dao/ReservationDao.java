@@ -28,8 +28,7 @@ public class ReservationDao {
         String sql = """
                 SELECT COUNT(*) AS total
                 FROM reservations r
-                JOIN reservation_equipment re ON r.reservation_id = re.reservation_id
-                WHERE re.equipment_id = ?
+                WHERE r.equipment_id = ?
                   AND r.status IN ('PENDING', 'APPROVED')
                   AND r.start_time < ?
                   AND r.end_time > ?
@@ -52,12 +51,12 @@ public class ReservationDao {
         }
     }
 
-    public int create(Connection connection, List<Integer> equipmentIds, int requesterId, Integer courseId,
+    public int create(Connection connection, int equipmentId, int requesterId, Integer courseId,
                       LocalDateTime start, LocalDateTime end, String purpose,
                       Map<Integer, Integer> consumableRequests) throws SQLException {
         String sql = """
-                INSERT INTO reservations (requester_id, course_id, start_time, end_time, purpose, status)
-                VALUES (?, ?, ?, ?, ?, 'PENDING')
+                INSERT INTO reservations (requester_id, course_id, equipment_id, start_time, end_time, purpose, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'PENDING')
                 """;
         try (PreparedStatement ps = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, requesterId);
@@ -66,15 +65,14 @@ public class ReservationDao {
             } else {
                 ps.setInt(2, courseId);
             }
-            ps.setTimestamp(3, Timestamp.valueOf(start));
-            ps.setTimestamp(4, Timestamp.valueOf(end));
-            ps.setString(5, purpose);
+            ps.setInt(3, equipmentId);
+            ps.setTimestamp(4, Timestamp.valueOf(start));
+            ps.setTimestamp(5, Timestamp.valueOf(end));
+            ps.setString(6, purpose);
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
                     int reservationId = keys.getInt(1);
-                    // A reservation can contain many equipment items and optional consumable needs.
-                    insertEquipment(connection, reservationId, equipmentIds);
                     insertConsumableRequests(connection, reservationId, consumableRequests);
                     return reservationId;
                 }
@@ -147,19 +145,6 @@ public class ReservationDao {
             ps.executeUpdate();
         } catch (SQLException ex) {
             throw Db.fail(ex);
-        }
-    }
-
-    private void insertEquipment(Connection connection, int reservationId, List<Integer> equipmentIds)
-            throws SQLException {
-        try (PreparedStatement ps = connection.prepareStatement(
-                "INSERT INTO reservation_equipment (reservation_id, equipment_id) VALUES (?, ?)")) {
-            for (int equipmentId : equipmentIds) {
-                ps.setInt(1, reservationId);
-                ps.setInt(2, equipmentId);
-                ps.addBatch();
-            }
-            ps.executeBatch();
         }
     }
 

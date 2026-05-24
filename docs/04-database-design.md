@@ -138,7 +138,7 @@ Important constraints include:
 
 ## Indexes
 
-- `idx_reservation_equipment_time` supports conflict checking by equipment and time.
+- `idx_reservation_equipment_slot` supports conflict checking by equipment and time.
 - `idx_reservation_status` supports filtering pending and approved requests.
 - `idx_ticket_status` supports maintenance workflow filtering.
 - `idx_equipment_status` supports equipment availability queries.

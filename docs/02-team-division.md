@@ -7,7 +7,7 @@ This document describes the planned division of work for a five-person group. Th
 Responsibilities:
 - Coordinate weekly progress and final integration.
 - Set up Maven project structure.
-- Implement reservation workflow, including multi-equipment requests.
+- Implement reservation workflow, including single-equipment fixed-slot requests.
 - Connect reservation consumable needs to the reservation form and database.
 - Write reservation-related service logic and tests.
 - Prepare the final run instructions.
@@ -73,7 +73,7 @@ Main files:
 Responsibilities:
 - Keep web front-end layout consistent and easy to demonstrate.
 - Write HTML/CSS/JavaScript page logic, role-based navigation, registration dialog, and shared web helper functions.
-- Keep interaction details usable, such as collapsed equipment selection with selected-item summary.
+- Keep interaction details usable, such as the fixed-slot schedule with clear available and booked states.
 - Write tests and manual test cases.
 - Combine documents and prepare the video script.
 

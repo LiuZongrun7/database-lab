@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -88,6 +89,7 @@ public class LabWebServer {
             server.createContext("/api/courses", api(this::handleCourses));
             server.createContext("/api/users/technicians", api(this::handleTechnicians));
             server.createContext("/api/reservations", api(this::handleReservations));
+            server.createContext("/api/reservations/slots", api(this::handleReservationSlots));
             server.createContext("/api/reservations/create", api(this::handleCreateReservation));
             server.createContext("/api/reservations/decide", api(this::handleDecideReservation));
             server.createContext("/api/reservations/cancel", api(this::handleCancelReservation));
@@ -165,26 +167,33 @@ public class LabWebServer {
         // The front-end hides this button for non-admins, and the API checks again here.
         requireAdmin(userFromForm(form));
         Integer equipmentId = form.getOptionalInt("equipmentId");
+        String status = form.get("status");
         if (equipmentId == null) {
+            if ("MAINTENANCE".equals(status)) {
+                throw new IllegalArgumentException("Create equipment as available first, then report a maintenance ticket.");
+            }
             int id = equipmentDao.create(
                     form.get("assetTag"),
                     form.get("name"),
                     form.get("category"),
                     form.getInt("labId"),
-                    form.get("status"),
+                    status,
                     form.get("purchaseDate"),
                     form.get("riskLevel"),
                     form.get("notes")
             );
             sendJson(exchange, Json.ok("Equipment #" + id + " saved."));
         } else {
+            if ("MAINTENANCE".equals(status) && !maintenanceDao.hasActiveTicketForEquipment(equipmentId)) {
+                throw new IllegalArgumentException("Create a maintenance ticket before setting equipment to maintenance.");
+            }
             equipmentDao.update(
                     equipmentId,
                     form.get("assetTag"),
                     form.get("name"),
                     form.get("category"),
                     form.getInt("labId"),
-                    form.get("status"),
+                    status,
                     form.get("purchaseDate"),
                     form.get("riskLevel"),
                     form.get("notes")
@@ -238,6 +247,17 @@ public class LabWebServer {
             ));
         }
         sendJson(exchange, Json.array(rows));
+    }
+
+    private void handleReservationSlots(HttpExchange exchange) throws IOException {
+        onlyGet(exchange);
+        FormData query = FormData.fromQuery(exchange.getRequestURI().getRawQuery());
+        int equipmentId = query.getInt("equipmentId");
+        String rawDate = query.get("startDate");
+        LocalDate startDate = rawDate.isBlank() ? LocalDate.now() : LocalDate.parse(rawDate);
+        Integer requestedDays = query.getOptionalInt("days");
+        int days = requestedDays == null ? 7 : requestedDays;
+        sendJson(exchange, Json.array(reservationService.fixedSlotAvailability(equipmentId, startDate, days)));
     }
 
     private void handleCreateReservation(HttpExchange exchange) throws IOException {

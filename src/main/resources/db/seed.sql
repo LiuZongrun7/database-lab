@@ -36,17 +36,10 @@ INSERT INTO equipment_course_access (equipment_id, course_id) VALUES
 (5, 1),
 (6, 1);
 
-INSERT INTO reservations (requester_id, course_id, start_time, end_time, purpose, status) VALUES
-(3, 1, '2026-05-20 10:00:00', '2026-05-20 12:00:00', 'Measure sensor output for lab exercise', 'APPROVED'),
-(4, 1, '2026-05-21 14:00:00', '2026-05-21 16:30:00', 'IoT gateway demo preparation', 'PENDING'),
-(3, 2, '2026-05-22 09:00:00', '2026-05-22 11:00:00', 'Train small image classifier', 'APPROVED');
-
-INSERT INTO reservation_equipment (reservation_id, equipment_id) VALUES
-(1, 3),
-(2, 5),
-(2, 3),
-(3, 1),
-(3, 2);
+INSERT INTO reservations (requester_id, course_id, equipment_id, start_time, end_time, purpose, status) VALUES
+(3, 1, 3, DATE_ADD(CURDATE(), INTERVAL 2 DAY) + INTERVAL 8 HOUR, DATE_ADD(CURDATE(), INTERVAL 2 DAY) + INTERVAL 14 HOUR, 'Measure sensor output for lab exercise', 'APPROVED'),
+(4, 1, 5, DATE_ADD(CURDATE(), INTERVAL 3 DAY) + INTERVAL 14 HOUR, DATE_ADD(CURDATE(), INTERVAL 3 DAY) + INTERVAL 20 HOUR, 'IoT gateway demo preparation', 'PENDING'),
+(3, 2, 1, DATE_ADD(CURDATE(), INTERVAL 4 DAY) + INTERVAL 20 HOUR, DATE_ADD(CURDATE(), INTERVAL 5 DAY) + INTERVAL 8 HOUR, 'Train small image classifier', 'APPROVED');
 
 INSERT INTO approvals (reservation_id, approver_id, decision, comment) VALUES
 (1, 2, 'APPROVED', 'Approved for scheduled lab work'),

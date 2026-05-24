@@ -85,6 +85,7 @@ CREATE TABLE reservations (
     reservation_id INT AUTO_INCREMENT PRIMARY KEY,
     requester_id INT NOT NULL,
     course_id INT,
+    equipment_id INT NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
     purpose VARCHAR(255) NOT NULL,
@@ -92,16 +93,8 @@ CREATE TABLE reservations (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_reservation_time CHECK (end_time > start_time),
     CONSTRAINT fk_res_requester FOREIGN KEY (requester_id) REFERENCES users(user_id),
-    CONSTRAINT fk_res_course FOREIGN KEY (course_id) REFERENCES courses(course_id)
-);
-
--- A reservation can include several equipment items, so this is a link table.
-CREATE TABLE reservation_equipment (
-    reservation_id INT NOT NULL,
-    equipment_id INT NOT NULL,
-    PRIMARY KEY (reservation_id, equipment_id),
-    CONSTRAINT fk_re_reservation FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE CASCADE,
-    CONSTRAINT fk_re_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id)
+    CONSTRAINT fk_res_course FOREIGN KEY (course_id) REFERENCES courses(course_id),
+    CONSTRAINT fk_res_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id)
 );
 
 -- Approval history is separate from the current reservation status.
@@ -177,7 +170,7 @@ CREATE TABLE stock_transactions (
 );
 
 CREATE INDEX idx_reservation_time ON reservations(start_time, end_time);
-CREATE INDEX idx_reservation_equipment_equipment ON reservation_equipment(equipment_id);
+CREATE INDEX idx_reservation_equipment_slot ON reservations(equipment_id, start_time, end_time);
 CREATE INDEX idx_reservation_status ON reservations(status);
 CREATE INDEX idx_ticket_status ON maintenance_tickets(status);
 CREATE INDEX idx_equipment_status ON equipment(status);
@@ -213,8 +206,8 @@ SELECT
     r.requester_id,
     u.full_name,
     u.role,
-    GROUP_CONCAT(DISTINCT e.asset_tag ORDER BY e.asset_tag SEPARATOR ', ') AS asset_tags,
-    GROUP_CONCAT(DISTINCT e.equipment_name ORDER BY e.equipment_name SEPARATOR ', ') AS equipment_names,
+    e.asset_tag AS asset_tags,
+    e.equipment_name AS equipment_names,
     r.start_time,
     r.end_time,
     r.status,
@@ -222,13 +215,12 @@ SELECT
     COALESCE(GROUP_CONCAT(DISTINCT CONCAT(c.item_name, ' x', rc.requested_quantity) ORDER BY c.item_name SEPARATOR ', '), '') AS consumable_needs
 FROM reservations r
 JOIN users u ON r.requester_id = u.user_id
-JOIN reservation_equipment re ON r.reservation_id = re.reservation_id
-JOIN equipment e ON re.equipment_id = e.equipment_id
+JOIN equipment e ON r.equipment_id = e.equipment_id
 LEFT JOIN reservation_consumables rc ON r.reservation_id = rc.reservation_id
 LEFT JOIN consumables c ON rc.consumable_id = c.consumable_id
-GROUP BY r.reservation_id, r.requester_id, u.full_name, u.role, r.start_time, r.end_time, r.status, r.purpose;
+GROUP BY r.reservation_id, r.requester_id, u.full_name, u.role, e.asset_tag, e.equipment_name, r.start_time, r.end_time, r.status, r.purpose;
 
--- View for reports: lab usage is counted through the reservation_equipment link table.
+-- View for reports: lab usage is counted through each reservation's single equipment item.
 CREATE VIEW v_lab_usage_report AS
 SELECT
     l.lab_code,
@@ -238,6 +230,5 @@ SELECT
     COUNT(DISTINCT CASE WHEN r.status = 'COMPLETED' THEN r.reservation_id END) AS completed_count
 FROM labs l
 LEFT JOIN equipment e ON l.lab_id = e.lab_id
-LEFT JOIN reservation_equipment re ON e.equipment_id = re.equipment_id
-LEFT JOIN reservations r ON re.reservation_id = r.reservation_id
+LEFT JOIN reservations r ON e.equipment_id = r.equipment_id
 GROUP BY l.lab_code, l.lab_name;
