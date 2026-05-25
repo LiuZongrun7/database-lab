@@ -261,6 +261,7 @@ const UI_TEXT = {
         'reservation.noSlotSelected': '请选择一个绿色可预约时段。',
         'reservation.noConsumableChoices': '暂无可申请耗材。',
         'reservation.stockMeta': '库存 {quantity} {unit}',
+        'state.processing': '处理中...',
         'maintenance.title': '维修工单',
         'maintenance.subtitle': '跟踪设备故障和维修处理进度。',
         'inventory.title': '耗材库存',
@@ -436,6 +437,7 @@ const UI_TEXT = {
         'reservation.noSlotSelected': 'Choose one green available time block.',
         'reservation.noConsumableChoices': 'No consumables are available to request.',
         'reservation.stockMeta': 'Stock {quantity} {unit}',
+        'state.processing': 'Processing...',
         'maintenance.title': 'Maintenance Tickets',
         'maintenance.subtitle': 'Track equipment faults and repair progress.',
         'inventory.title': 'Consumable Inventory',
@@ -746,13 +748,13 @@ async function loadEquipment(q = '') {
 function equipmentActions(equipment) {
     const buttons = [];
     if (equipment.status !== 'RETIRED') {
-        buttons.push(`<button type="button" onclick="openReportProblem(${equipment.id})"><i class="icon-alert-triangle"></i> ${escapeHtml(t('action.report'))}</button>`);
+        buttons.push(`<button type="button" onclick="openReportProblem(${equipment.id}, this)"><i class="icon-alert-triangle"></i> ${escapeHtml(t('action.report'))}</button>`);
     }
     if (currentUser?.role === 'ADMIN') {
         // Admin manages equipment records; other roles can only report problems.
-        buttons.push(`<button type="button" class="secondary" onclick="openEquipmentForm(${equipment.id})"><i class="icon-edit"></i> ${escapeHtml(t('action.edit'))}</button>`);
+        buttons.push(`<button type="button" class="secondary" onclick="openEquipmentForm(${equipment.id}, this)"><i class="icon-edit"></i> ${escapeHtml(t('action.edit'))}</button>`);
         if (equipment.status !== 'RETIRED') {
-            buttons.push(`<button type="button" class="danger" onclick="openRetireEquipment(${equipment.id})"><i class="icon-archive"></i> ${escapeHtml(t('action.retire'))}</button>`);
+            buttons.push(`<button type="button" class="danger" onclick="openRetireEquipment(${equipment.id}, this)"><i class="icon-archive"></i> ${escapeHtml(t('action.retire'))}</button>`);
         }
     }
     return buttons.length ? `<div class="row-actions">${buttons.join('')}</div>` : '';
@@ -940,9 +942,15 @@ function slotReasonText(reason) {
     return t('common.unavailable');
 }
 
-async function openEquipmentForm(equipmentId = null) {
+async function openEquipmentForm(equipmentId = null, triggerButton = null) {
+    const releaseTrigger = lockButton(triggerButton);
     if (labCache.length === 0) {
-        await loadLabs();
+        try {
+            await loadLabs();
+        } catch (error) {
+            releaseTrigger();
+            throw error;
+        }
     }
     const equipment = equipmentId ? equipmentCache.find(item => item.id === equipmentId) : null;
     const labOptions = labCache.map(lab => optionHtml(lab.id, `${lab.code} - ${lab.name}`, equipment?.labId)).join('');
@@ -977,11 +985,12 @@ async function openEquipmentForm(equipmentId = null) {
         if (result.ok) {
             await Promise.all([loadEquipment(), canUseTab('reports') ? loadReports() : Promise.resolve()]);
         }
-    });
+    }, { onClose: releaseTrigger });
 }
 
-function openRetireEquipment(equipmentId) {
+function openRetireEquipment(equipmentId, triggerButton = null) {
     const equipment = equipmentCache.find(item => item.id === equipmentId);
+    const releaseTrigger = lockButton(triggerButton);
     openModal(t('modal.retireEquipment'), `
         <p class="hint">${escapeHtml(t('modal.retireConfirm', { assetTag: equipment?.assetTag || '' }))}</p>
     `, async (data) => {
@@ -992,7 +1001,7 @@ function openRetireEquipment(equipmentId) {
         if (result.ok) {
             await Promise.all([loadEquipment(), canUseTab('reports') ? loadReports() : Promise.resolve()]);
         }
-    });
+    }, { onClose: releaseTrigger });
 }
 
 function optionHtml(value, text, selectedValue) {
@@ -1002,30 +1011,33 @@ function optionHtml(value, text, selectedValue) {
 
 async function createReservation(event) {
     event.preventDefault();
-    const data = new FormData(event.target);
-    const equipmentIds = selectedEquipmentIds();
-    if (equipmentIds.length === 0) {
-        showToast('At least one equipment item is required', true);
-        return;
-    }
-    if (!selectedSlot) {
-        showToast(t('reservation.noSlotSelected'), true);
-        return;
-    }
-    data.set('startTime', selectedSlot.startTime);
-    data.set('endTime', selectedSlot.endTime);
-    // The backend expects one equipment id and id:quantity pairs for consumables.
-    data.set('equipmentIds', equipmentIds[0]);
-    data.set('consumableRequests', collectConsumableRequests());
-    data.append('userId', currentUser.id);
-    const result = await post('/api/reservations/create', data);
-    showToast(result.message, !result.ok);
-    if (result.ok) {
-        renderConsumableRequestEditor([]);
-        selectedSlot = null;
-        await loadReservationSlots();
-        await loadReservations();
-    }
+    const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+    await withButtonLock(submitButton, async () => {
+        const data = new FormData(event.target);
+        const equipmentIds = selectedEquipmentIds();
+        if (equipmentIds.length === 0) {
+            showToast('At least one equipment item is required', true);
+            return;
+        }
+        if (!selectedSlot) {
+            showToast(t('reservation.noSlotSelected'), true);
+            return;
+        }
+        data.set('startTime', selectedSlot.startTime);
+        data.set('endTime', selectedSlot.endTime);
+        // The backend expects one equipment id and id:quantity pairs for consumables.
+        data.set('equipmentIds', equipmentIds[0]);
+        data.set('consumableRequests', collectConsumableRequests());
+        data.append('userId', currentUser.id);
+        const result = await post('/api/reservations/create', data);
+        showToast(result.message, !result.ok);
+        if (result.ok) {
+            renderConsumableRequestEditor([]);
+            selectedSlot = null;
+            await loadReservationSlots();
+            await loadReservations();
+        }
+    });
 }
 
 function dateOnlyValue(date) {
@@ -1172,16 +1184,17 @@ function collectConsumableRequests() {
 function reservationActions(row, canDecide) {
     const buttons = [];
     if (canDecide && row.status === 'PENDING') {
-        buttons.push(`<button type="button" onclick="decideReservation(${row.id}, true)"><i class="icon-check"></i> ${escapeHtml(t('action.approve'))}</button>`);
-        buttons.push(`<button type="button" class="danger" onclick="decideReservation(${row.id}, false)"><i class="icon-x"></i> ${escapeHtml(t('action.reject'))}</button>`);
+        buttons.push(`<button type="button" onclick="decideReservation(${row.id}, true, this)"><i class="icon-check"></i> ${escapeHtml(t('action.approve'))}</button>`);
+        buttons.push(`<button type="button" class="danger" onclick="decideReservation(${row.id}, false, this)"><i class="icon-x"></i> ${escapeHtml(t('action.reject'))}</button>`);
     }
     if (row.status === 'PENDING' || row.status === 'APPROVED') {
-        buttons.push(`<button type="button" class="secondary" onclick="cancelReservation(${row.id})"><i class="icon-x-circle"></i> ${escapeHtml(t('action.cancel'))}</button>`);
+        buttons.push(`<button type="button" class="secondary" onclick="cancelReservation(${row.id}, this)"><i class="icon-x-circle"></i> ${escapeHtml(t('action.cancel'))}</button>`);
     }
     return buttons.join(' ');
 }
 
-function decideReservation(id, approve) {
+function decideReservation(id, approve, triggerButton = null) {
+    const releaseTrigger = lockButton(triggerButton);
     openModal(approve ? t('modal.approveReservation') : t('modal.rejectReservation'), `
         <label>${escapeHtml(t('form.comment'))} <input name="comment" value="${escapeHtml(approve ? t('modal.approveComment') : t('modal.rejectComment'))}"></label>
     `, async (data) => {
@@ -1191,19 +1204,22 @@ function decideReservation(id, approve) {
         const result = await post('/api/reservations/decide', data);
         showToast(result.message, !result.ok);
         await loadReservations();
+    }, { onClose: releaseTrigger });
+}
+
+async function cancelReservation(id, triggerButton = null) {
+    await withButtonLock(triggerButton, async () => {
+        const data = new FormData();
+        data.append('reservationId', id);
+        data.append('userId', currentUser.id);
+        const result = await post('/api/reservations/cancel', data);
+        showToast(result.message, !result.ok);
+        await loadReservations();
     });
 }
 
-async function cancelReservation(id) {
-    const data = new FormData();
-    data.append('reservationId', id);
-    data.append('userId', currentUser.id);
-    const result = await post('/api/reservations/cancel', data);
-    showToast(result.message, !result.ok);
-    await loadReservations();
-}
-
-function openReportProblem(equipmentId) {
+function openReportProblem(equipmentId, triggerButton = null) {
+    const releaseTrigger = lockButton(triggerButton);
     openModal(t('modal.reportProblem'), `
         <label>${escapeHtml(t('form.title'))} <input name="title" required></label>
         <label>${escapeHtml(t('form.description'))} <input name="description" required></label>
@@ -1223,7 +1239,7 @@ function openReportProblem(equipmentId) {
         if (result.ok) {
             await Promise.all([loadEquipment(), loadMaintenance()]);
         }
-    });
+    }, { onClose: releaseTrigger });
 }
 
 async function loadMaintenance() {
@@ -1241,14 +1257,15 @@ async function loadMaintenance() {
             <td>${escapeHtml(label(RISK_LABELS, ticket.priority))}</td>
             <td>${badge(ticket.status)}</td>
             <td>${escapeHtml(ticket.reportedAt)}</td>
-            <td>${canUpdate ? `<button type="button" onclick="openUpdateTicket(${ticket.id})"><i class="icon-edit"></i> ${escapeHtml(t('action.update'))}</button>` : ''}</td>
+            <td>${canUpdate ? `<button type="button" onclick="openUpdateTicket(${ticket.id}, this)"><i class="icon-edit"></i> ${escapeHtml(t('action.update'))}</button>` : ''}</td>
         </tr>
     `);
     renderRoleWorkspace();
 }
 
-function openUpdateTicket(ticketId) {
+function openUpdateTicket(ticketId, triggerButton = null) {
     const techOptions = technicianCache.map(t => `<option value="${t.id}">${escapeHtml(t.fullName)}</option>`).join('');
+    const releaseTrigger = lockButton(triggerButton);
     openModal(t('modal.updateTicket'), `
         <label>${escapeHtml(t('form.technician'))} <select name="technicianId">${techOptions}</select></label>
         <label>${escapeHtml(t('form.status'))}
@@ -1268,7 +1285,7 @@ function openUpdateTicket(ticketId) {
         if (result.ok) {
             await Promise.all([loadEquipment(), loadMaintenance()]);
         }
-    });
+    }, { onClose: releaseTrigger });
 }
 
 async function loadInventory() {
@@ -1286,7 +1303,7 @@ async function loadInventory() {
             <td>${item.quantity}</td>
             <td>${item.reorderLevel}</td>
             <td>${item.lowStock ? badge('LOW') : `<span style="color: var(--text-muted);">${escapeHtml(t('common.normal'))}</span>`}</td>
-            <td>${canChange ? `<div class="row-actions"><button type="button" onclick="openChangeStock(${item.id})"><i class="icon-plus-minus"></i> ${escapeHtml(t('action.adjust'))}</button></div>` : ''}</td>
+            <td>${canChange ? `<div class="row-actions"><button type="button" onclick="openChangeStock(${item.id}, this)"><i class="icon-plus-minus"></i> ${escapeHtml(t('action.adjust'))}</button></div>` : ''}</td>
         </tr>
     `);
     renderRoleWorkspace();
@@ -1319,7 +1336,8 @@ async function openConsumableForm() {
     });
 }
 
-function openChangeStock(consumableId) {
+function openChangeStock(consumableId, triggerButton = null) {
+    const releaseTrigger = lockButton(triggerButton);
     openModal(t('modal.changeStock'), `
         <label>${escapeHtml(t('form.amount'))} <input name="amount" value="1" required></label>
         <label>${escapeHtml(t('form.reason'))} <input name="reason" placeholder="${escapeHtml(t('placeholder.reason'))}" required></label>
@@ -1331,7 +1349,7 @@ function openChangeStock(consumableId) {
         if (result.ok) {
             await loadInventory();
         }
-    });
+    }, { onClose: releaseTrigger });
 }
 
 async function loadReports() {
@@ -1451,17 +1469,90 @@ function roleMetrics(role) {
     ];
 }
 
-function openModal(title, bodyHtml, onSubmit) {
+function openModal(title, bodyHtml, onSubmit, options = {}) {
     const modal = $('modal');
+    const form = $('modalForm');
+    const submitButton = $('modalSubmit');
+    const cancelButton = $('modalCancel');
+    let submitted = false;
     $('modalTitle').textContent = title;
     $('modalBody').innerHTML = bodyHtml;
-    $('modalForm').onsubmit = async (event) => {
+    resetButton(submitButton);
+    resetButton(cancelButton);
+    form.onsubmit = async (event) => {
         event.preventDefault();
+        if (form.dataset.submitting === 'true') {
+            return;
+        }
+        form.dataset.submitting = 'true';
+        submitted = true;
+        setButtonBusy(submitButton);
+        if (cancelButton) {
+            cancelButton.disabled = true;
+        }
         const data = new FormData(event.target);
-        modal.close();
-        await onSubmit(data);
+        try {
+            await onSubmit(data);
+            modal.close();
+        } finally {
+            delete form.dataset.submitting;
+            resetButton(submitButton);
+            if (cancelButton) {
+                cancelButton.disabled = false;
+            }
+            options.onClose?.();
+        }
+    };
+    modal.oncancel = () => {
+        if (!submitted) {
+            options.onClose?.();
+        }
+    };
+    modal.onclose = () => {
+        if (!submitted) {
+            options.onClose?.();
+        }
+        modal.oncancel = null;
+        modal.onclose = null;
     };
     modal.showModal();
+}
+
+function setButtonBusy(button) {
+    if (!button || button.disabled) {
+        return () => {};
+    }
+    if (!button.dataset.originalHtml) {
+        button.dataset.originalHtml = button.innerHTML;
+    }
+    button.disabled = true;
+    button.classList.add('is-busy');
+    button.innerHTML = `<i class="icon-loader-2"></i> ${escapeHtml(t('state.processing'))}`;
+    return () => resetButton(button);
+}
+
+function resetButton(button) {
+    if (!button) return;
+    if (button.dataset.originalHtml) {
+        button.innerHTML = button.dataset.originalHtml;
+        delete button.dataset.originalHtml;
+    }
+    button.disabled = false;
+    button.classList.remove('is-busy');
+}
+
+function lockButton(button) {
+    if (!button) return () => {};
+    return setButtonBusy(button);
+}
+
+async function withButtonLock(button, action) {
+    const release = lockButton(button);
+    try {
+        return await action();
+    } finally {
+        release();
+    }
 }
 
 async function get(url) {
@@ -1585,7 +1676,7 @@ function rerenderCurrentData() {
                 <td>${escapeHtml(label(RISK_LABELS, ticket.priority))}</td>
                 <td>${badge(ticket.status)}</td>
                 <td>${escapeHtml(ticket.reportedAt)}</td>
-                <td>${canUpdate ? `<button type="button" onclick="openUpdateTicket(${ticket.id})"><i class="icon-edit"></i> ${escapeHtml(t('action.update'))}</button>` : ''}</td>
+                <td>${canUpdate ? `<button type="button" onclick="openUpdateTicket(${ticket.id}, this)"><i class="icon-edit"></i> ${escapeHtml(t('action.update'))}</button>` : ''}</td>
             </tr>
         `);
     }
@@ -1600,7 +1691,7 @@ function rerenderCurrentData() {
                 <td>${item.quantity}</td>
                 <td>${item.reorderLevel}</td>
                 <td>${item.lowStock ? badge('LOW') : `<span style="color: var(--text-muted);">${escapeHtml(t('common.normal'))}</span>`}</td>
-                <td>${canChange ? `<div class="row-actions"><button type="button" onclick="openChangeStock(${item.id})"><i class="icon-plus-minus"></i> ${escapeHtml(t('action.adjust'))}</button></div>` : ''}</td>
+                <td>${canChange ? `<div class="row-actions"><button type="button" onclick="openChangeStock(${item.id}, this)"><i class="icon-plus-minus"></i> ${escapeHtml(t('action.adjust'))}</button></div>` : ''}</td>
             </tr>
         `);
         renderConsumableRequestEditor(collectConsumableRows());
