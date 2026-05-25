@@ -14,7 +14,6 @@
 - `src/main/java/edu/ucd/comp2013j/lab/web/Json.java`
 - `src/main/java/edu/ucd/comp2013j/lab/model/*.java`
 - `src/main/java/edu/ucd/comp2013j/lab/dao/UserDao.java`
-- `src/main/java/edu/ucd/comp2013j/lab/dao/CourseDao.java`
 - `src/main/java/edu/ucd/comp2013j/lab/service/AuthService.java`
 - `src/test/java/edu/ucd/comp2013j/lab/SystemServiceTest.java`
 - `docs/07-test-document.md`
@@ -33,7 +32,8 @@
 
 - 登录页提供学生自助注册；
 - 登录后根据角色显示不同 tab；
-- 预约设备选择区默认收起，并在收起时显示已选设备摘要；
+- 学生注册必须选择所属实验室；
+- 预约设备选择区只显示学生关联实验室里的设备；
 - 管理员才看到设备管理和新增耗材入口。
 
 Java Web server 在 `LabWebServer.java`。它做两件事：
@@ -90,7 +90,7 @@ A: `app.js` 用 `fetch()` 调 API。Java server 接到请求后调用 service，
 
 ### Q: 为什么学生注册只注册成学生？
 
-A: 因为管理员、教师和技术员有更高权限，真实系统中不应该让用户随便自助注册成这些角色。
+A: 因为管理员和技术员有更高权限，真实系统中不应该让用户随便自助注册成这些角色。
 
 ### Q: model class 有什么用？
 

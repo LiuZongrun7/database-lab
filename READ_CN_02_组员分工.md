@@ -9,9 +9,9 @@
 - Maven 项目和启动入口；
 - Java Web Server 启动；
 - 登录后的整体流程；
-- 预约申请，包括一次预约多台设备；
+- 预约申请，包括单设备固定时段预约；
 - 预约时填写耗材需求；
-- 老师/管理员审批；
+- 管理员审批；
 - 运行说明和 demo 串联。
 
 应该看的文件：
@@ -77,7 +77,7 @@
 - 管理员退役设备，而不是真删除；
 - 上报设备故障；
 - 创建维修工单；
-- 更新维修工单状态；
+- 接单并标记维修完成；
 - 设备状态从 AVAILABLE 变成 MAINTENANCE，再变回 AVAILABLE。
 
 应该看的文件：
@@ -148,7 +148,6 @@
 - `src/main/java/edu/ucd/comp2013j/lab/web/Json.java`
 - `src/main/java/edu/ucd/comp2013j/lab/model/*.java`
 - `src/main/java/edu/ucd/comp2013j/lab/dao/UserDao.java`
-- `src/main/java/edu/ucd/comp2013j/lab/dao/CourseDao.java`
 - `src/main/java/edu/ucd/comp2013j/lab/service/AuthService.java`
 - `src/test/java/edu/ucd/comp2013j/lab/SystemServiceTest.java`
 - `READ_CN_04_Web前端说明.md`
@@ -158,7 +157,7 @@
 
 - 为什么前端是 Web 页面；
 - JavaScript 怎么调用 Java API；
-- 为什么学生、老师、管理员、技术员的界面入口不同；
+- 为什么学生、管理员、技术员的界面入口不同；
 - 注册为什么只开放学生身份；
 - model class 有什么用；
 - 自动化测试覆盖了什么；

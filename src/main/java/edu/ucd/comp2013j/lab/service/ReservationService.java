@@ -33,8 +33,8 @@ public class ReservationService {
         this.reservationDao = reservationDao;
     }
 
-    public int requestReservation(List<Integer> equipmentIds, int requesterId, Integer courseId,
-                                  LocalDateTime start, LocalDateTime end, String purpose,
+    public int requestReservation(List<Integer> equipmentIds, int requesterId, LocalDateTime start,
+                                  LocalDateTime end, String purpose,
                                   Map<Integer, Integer> consumableRequests) {
         validateTime(start, end);
         validateFixedSlot(start, end);
@@ -47,12 +47,12 @@ public class ReservationService {
             connection.setAutoCommit(false);
             try {
                 // This transaction is the important part: check availability and insert as one unit.
-                checkEquipmentCanBeReserved(connection, equipmentId);
+                checkEquipmentCanBeReserved(connection, equipmentId, requesterId);
                 if (reservationDao.hasTimeConflict(connection, equipmentId, start, end, null)) {
                     throw new IllegalArgumentException("This time slot is already booked.");
                 }
-                int id = reservationDao.create(connection, equipmentId, requesterId, courseId, start, end,
-                        purpose.trim(), consumableRequests);
+                int id = reservationDao.create(connection, equipmentId, requesterId, start, end, purpose.trim(),
+                        consumableRequests);
                 connection.commit();
                 return id;
             } catch (RuntimeException | SQLException ex) {
@@ -66,11 +66,12 @@ public class ReservationService {
         }
     }
 
-    public List<Map<String, ?>> fixedSlotAvailability(int equipmentId, LocalDate startDate, int days) {
+    public List<Map<String, ?>> fixedSlotAvailability(int equipmentId, int requesterId, LocalDate startDate, int days) {
         LocalDate firstDate = startDate == null ? LocalDate.now() : startDate;
         int safeDays = Math.max(1, Math.min(days, 21));
         try (Connection connection = database.getConnection()) {
-            String equipmentStatus = equipmentStatus(connection, equipmentId);
+            EquipmentAccess equipmentAccess = equipmentAccess(connection, equipmentId, false);
+            boolean labAllowed = canUserAccessLab(connection, requesterId, equipmentAccess.labId());
             List<Map<String, ?>> rows = new ArrayList<>();
             for (int dayIndex = 0; dayIndex < safeDays; dayIndex++) {
                 LocalDate date = firstDate.plusDays(dayIndex);
@@ -80,7 +81,8 @@ public class ReservationService {
                             ? date.plusDays(1).atTime(slot.endTime())
                             : date.atTime(slot.endTime());
                     boolean past = !start.isAfter(LocalDateTime.now());
-                    boolean equipmentBookable = "AVAILABLE".equals(equipmentStatus) || "RESERVED".equals(equipmentStatus);
+                    boolean equipmentBookable = labAllowed
+                            && ("AVAILABLE".equals(equipmentAccess.status()) || "RESERVED".equals(equipmentAccess.status()));
                     boolean conflict = equipmentBookable && !past
                             && reservationDao.hasTimeConflict(connection, equipmentId, start, end, null);
                     boolean available = equipmentBookable && !past && !conflict;
@@ -90,7 +92,7 @@ public class ReservationService {
                     row.put("startTime", formatTime(start));
                     row.put("endTime", formatTime(end));
                     row.put("available", available);
-                    row.put("reason", availabilityReason(equipmentStatus, equipmentBookable, past, conflict));
+                    row.put("reason", availabilityReason(equipmentAccess.status(), labAllowed, past, conflict));
                     rows.add(row);
                 }
             }
@@ -158,32 +160,58 @@ public class ReservationService {
         return unique.iterator().next();
     }
 
-    private void checkEquipmentCanBeReserved(Connection connection, int equipmentId) throws SQLException {
-        String status = equipmentStatus(connection, equipmentId, true);
-        if (!"AVAILABLE".equals(status) && !"RESERVED".equals(status)) {
-            throw new IllegalArgumentException("Equipment status is " + status + ", so it cannot be reserved.");
+    private void checkEquipmentCanBeReserved(Connection connection, int equipmentId, int requesterId) throws SQLException {
+        EquipmentAccess access = equipmentAccess(connection, equipmentId, true);
+        if (!canUserAccessLab(connection, requesterId, access.labId())) {
+            throw new IllegalArgumentException("Student can only reserve equipment from linked labs.");
+        }
+        if (!"AVAILABLE".equals(access.status()) && !"RESERVED".equals(access.status())) {
+            throw new IllegalArgumentException("Equipment status is " + access.status() + ", so it cannot be reserved.");
         }
     }
 
-    private String equipmentStatus(Connection connection, int equipmentId) throws SQLException {
-        return equipmentStatus(connection, equipmentId, false);
-    }
-
-    private String equipmentStatus(Connection connection, int equipmentId, boolean lock) throws SQLException {
-        String sql = "SELECT status FROM equipment WHERE equipment_id = ?" + (lock ? " FOR UPDATE" : "");
+    private EquipmentAccess equipmentAccess(Connection connection, int equipmentId, boolean lock) throws SQLException {
+        String sql = "SELECT status, lab_id FROM equipment WHERE equipment_id = ?" + (lock ? " FOR UPDATE" : "");
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, equipmentId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     throw new IllegalArgumentException("Equipment does not exist");
                 }
-                return rs.getString("status");
+                return new EquipmentAccess(rs.getString("status"), rs.getInt("lab_id"));
             }
         }
     }
 
-    private String availabilityReason(String equipmentStatus, boolean equipmentBookable, boolean past, boolean conflict) {
-        if (!equipmentBookable) {
+    private boolean canUserAccessLab(Connection connection, int userId, int labId) throws SQLException {
+        String roleSql = "SELECT role FROM users WHERE user_id = ? AND active = TRUE";
+        try (PreparedStatement ps = connection.prepareStatement(roleSql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new IllegalArgumentException("Unknown user id: " + userId);
+                }
+                if (!"STUDENT".equals(rs.getString("role"))) {
+                    return true;
+                }
+            }
+        }
+        String labSql = "SELECT COUNT(*) AS total FROM student_labs WHERE user_id = ? AND lab_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(labSql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, labId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt("total") > 0;
+            }
+        }
+    }
+
+    private String availabilityReason(String equipmentStatus, boolean labAllowed, boolean past, boolean conflict) {
+        if (!labAllowed) {
+            return "NO_LAB_ACCESS";
+        }
+        if (!"AVAILABLE".equals(equipmentStatus) && !"RESERVED".equals(equipmentStatus)) {
             return equipmentStatus;
         }
         if (past) {
@@ -200,5 +228,8 @@ public class ReservationService {
     }
 
     public record FixedSlot(String key, LocalTime startTime, LocalTime endTime, boolean endsNextDay) {
+    }
+
+    private record EquipmentAccess(String status, int labId) {
     }
 }

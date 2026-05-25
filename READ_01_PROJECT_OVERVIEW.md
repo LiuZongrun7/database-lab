@@ -13,7 +13,7 @@ It supports:
 - user login;
 - equipment search;
 - equipment reservation requests;
-- teacher/admin approval or rejection;
+- administrator approval or rejection;
 - maintenance ticket reporting;
 - technician ticket updates;
 - consumable inventory management;
@@ -71,19 +71,21 @@ http://localhost:8080
 
 | Username | Password | Role |
 | --- | --- | --- |
-| admin | admin123 | ADMIN |
-| teacher | teacher123 | TEACHER |
-| student1 | student123 | STUDENT |
-| tech | tech123 | TECHNICIAN |
+| admin | 123 | ADMIN |
+| tech | 123 | TECHNICIAN |
+| student_ai | 123 | STUDENT |
+| student_bio | 123 | STUDENT |
+| student_net | 123 | STUDENT |
+| student_multi | 123 | STUDENT |
 
 ## Main Demo Flow
 
-1. Login as `student1`.
+1. Login as `student_net`.
 2. Search equipment in the Equipment tab.
 3. Create a reservation request in the Reservations tab.
-4. Login as `teacher`.
+4. Login as `admin`.
 5. Approve or reject the pending reservation.
-6. Login as `student1` or `admin`.
+6. Login as `student_net` or `admin`.
 7. Report an equipment problem.
 8. Login as `tech`.
 9. Update the maintenance ticket to resolved.
@@ -91,7 +93,8 @@ http://localhost:8080
 
 ## Most Important Database Points To Mention
 
-- `course_members` and `equipment_course_access` are many-to-many tables.
+- `student_labs` is the many-to-many table that links students to labs.
+- Students can only reserve equipment from their linked labs.
 - `reservations` uses time conflict checking.
 - `approvals` stores approval history.
 - `maintenance_tickets` and `maintenance_updates` store repair workflow and history.

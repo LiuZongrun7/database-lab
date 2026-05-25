@@ -27,12 +27,6 @@ body[data-role="ADMIN"] {
     --accent-strong: #861225;
 }
 
-body[data-role="TEACHER"] {
-    --accent: #2563eb;
-    --accent-weak: rgba(37, 99, 235, 0.1);
-    --accent-strong: #1d4ed8;
-}
-
 body[data-role="STUDENT"] {
     --accent: #0f766e;
     --accent-weak: rgba(15, 118, 110, 0.1);
@@ -119,7 +113,6 @@ body::after {
 .topbar p,
 .hint,
 .section-head p,
-.workspace-hero p,
 .request-section-head p,
 .selection-summary,
 .empty-note {
@@ -255,6 +248,38 @@ h3 {
     color: #344054;
     font-size: 13px;
     font-weight: 650;
+}
+
+.modal-field {
+    display: grid;
+    gap: 8px;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.check-list {
+    display: grid;
+    gap: 8px;
+}
+
+.check-option {
+    display: grid !important;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 9px !important;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    cursor: pointer;
+}
+
+.check-option input {
+    width: 18px;
+    min-height: 18px;
+    accent-color: var(--accent);
 }
 
 input,
@@ -402,90 +427,6 @@ button.icon-action {
 
 .tab-page.active {
     display: block;
-}
-
-/* Role dashboard is an overview only; real actions stay in the tabs. */
-.role-workspace {
-    display: grid;
-    gap: 14px;
-    margin-bottom: 18px;
-}
-
-.workspace-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
-    align-items: center;
-    padding: 24px;
-    border: 1px solid var(--line);
-    border-left: 5px solid var(--accent);
-    border-radius: var(--radius);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42));
-    backdrop-filter: blur(12px);
-}
-
-.workspace-hero h2 {
-    margin: 4px 0 8px;
-    font-size: 24px;
-}
-
-.workspace-hero p {
-    margin: 0;
-    font-size: 14px;
-}
-
-.metric-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.metric-card {
-    min-height: 92px;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-        "icon value"
-        "icon label";
-    align-items: center;
-    justify-content: start;
-    column-gap: 12px;
-    padding: 16px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.5);
-    color: var(--text);
-    text-align: left;
-    box-shadow: none;
-    cursor: default;
-}
-
-.metric-card:hover {
-    transform: none;
-    box-shadow: none;
-}
-
-.metric-icon {
-    grid-area: icon;
-    width: 42px;
-    height: 42px;
-    display: grid;
-    place-items: center;
-    border-radius: var(--radius);
-    background: var(--accent-weak);
-    color: var(--accent);
-    font-size: 18px;
-}
-
-.metric-card strong {
-    grid-area: value;
-    font-size: 28px;
-    line-height: 1;
-}
-
-.metric-card span:last-child {
-    grid-area: label;
-    color: var(--text-muted);
-    font-size: 13px;
 }
 
 .section-head {
@@ -805,7 +746,6 @@ tbody tr:hover {
 .status.APPROVED,
 .status.AVAILABLE,
 .status.RESOLVED,
-.status.CLOSED,
 .status.OK {
     background: rgba(8, 127, 91, 0.1);
     color: var(--success);
@@ -813,7 +753,6 @@ tbody tr:hover {
 
 .status.PENDING,
 .status.IN_PROGRESS,
-.status.ASSIGNED,
 .status.RESERVED {
     background: rgba(183, 121, 31, 0.12);
     color: var(--warning);
@@ -929,18 +868,9 @@ td button + button {
 
 @media (max-width: 860px) {
     .topbar,
-    .section-head,
-    .workspace-hero {
+    .section-head {
         flex-direction: column;
         align-items: flex-start;
-    }
-
-    .workspace-hero {
-        grid-template-columns: 1fr;
-    }
-
-    .metric-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .card-form,
@@ -988,10 +918,6 @@ td button + button {
     .tabs {
         flex-direction: column;
         align-items: stretch;
-    }
-
-    .metric-grid {
-        grid-template-columns: 1fr;
     }
 
     .equipment-choice {

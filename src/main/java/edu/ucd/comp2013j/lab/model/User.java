@@ -45,10 +45,6 @@ public class User {
         return "ADMIN".equals(role);
     }
 
-    public boolean isTeacher() {
-        return "TEACHER".equals(role);
-    }
-
     public boolean isTechnician() {
         return "TECHNICIAN".equals(role);
     }

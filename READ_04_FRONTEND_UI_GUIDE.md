@@ -84,10 +84,10 @@ Back-end API:
 User actions:
 
 - create reservation request;
-- select multiple equipment items;
+- select one equipment item and a fixed available time block;
 - add consumable requests;
 - view reservations;
-- approve or reject if teacher/admin;
+- approve or reject if admin;
 - cancel active reservation.
 
 ### Maintenance Page
@@ -101,8 +101,7 @@ Back-end API:
 User actions:
 
 - view tickets;
-- assign technician;
-- update ticket status.
+- accept open tickets and mark repairs as finished.
 
 ### Inventory Page
 

@@ -3,6 +3,7 @@ package edu.ucd.comp2013j.lab.dao;
 import edu.ucd.comp2013j.lab.db.Database;
 import edu.ucd.comp2013j.lab.db.Db;
 import edu.ucd.comp2013j.lab.model.Equipment;
+import edu.ucd.comp2013j.lab.model.User;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,40 +23,57 @@ public class EquipmentDao {
     }
 
     public List<Equipment> findAll() {
-        // The view already joins labs and open maintenance ticket counts.
-        String sql = """
-                SELECT equipment_id, asset_tag, equipment_name, category, lab_id, lab_code,
-                       status, purchase_date, risk_level, notes, open_ticket_count
-                FROM v_equipment_status
-                ORDER BY lab_code, asset_tag
-                """;
-        try (Connection connection = database.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            List<Equipment> items = new ArrayList<>();
-            while (rs.next()) {
-                items.add(mapEquipment(rs));
-            }
-            return items;
-        } catch (SQLException ex) {
-            throw Db.fail(ex);
-        }
+        return findVisibleFor(null);
+    }
+
+    public List<Equipment> findVisibleFor(User user) {
+        return queryVisible(user, "");
     }
 
     public List<Equipment> search(String keyword) {
-        String like = "%" + keyword.toLowerCase() + "%";
-        String sql = """
+        return searchVisibleFor(null, keyword);
+    }
+
+    public List<Equipment> searchVisibleFor(User user, String keyword) {
+        return queryVisible(user, keyword == null ? "" : keyword);
+    }
+
+    private List<Equipment> queryVisible(User user, String keyword) {
+        boolean studentOnly = user != null && "STUDENT".equals(user.getRole());
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+        StringBuilder sql = new StringBuilder("""
                 SELECT equipment_id, asset_tag, equipment_name, category, lab_id, lab_code,
                        status, purchase_date, risk_level, notes, open_ticket_count
-                FROM v_equipment_status
-                WHERE LOWER(asset_tag) LIKE ? OR LOWER(equipment_name) LIKE ? OR LOWER(category) LIKE ?
-                ORDER BY lab_code, asset_tag
-                """;
+                FROM v_equipment_status ves
+                WHERE 1 = 1
+                """);
+        if (studentOnly) {
+            sql.append("""
+                      AND EXISTS (
+                          SELECT 1
+                          FROM student_labs sl
+                          WHERE sl.lab_id = ves.lab_id
+                            AND sl.user_id = ?
+                      )
+                    """);
+        }
+        if (hasKeyword) {
+            sql.append(" AND (LOWER(asset_tag) LIKE ? OR LOWER(equipment_name) LIKE ? OR LOWER(category) LIKE ?)");
+        }
+        sql.append(" ORDER BY lab_code, asset_tag");
+
         try (Connection connection = database.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, like);
-            ps.setString(2, like);
-            ps.setString(3, like);
+             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int index = 1;
+            if (studentOnly) {
+                ps.setInt(index++, user.getId());
+            }
+            if (hasKeyword) {
+                String like = "%" + keyword.toLowerCase() + "%";
+                ps.setString(index++, like);
+                ps.setString(index++, like);
+                ps.setString(index, like);
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 List<Equipment> items = new ArrayList<>();
                 while (rs.next()) {

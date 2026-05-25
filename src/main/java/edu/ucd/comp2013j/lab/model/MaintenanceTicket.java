@@ -7,6 +7,7 @@ public class MaintenanceTicket {
     private final String assetTag;
     private final String equipmentName;
     private final String reporterName;
+    private final int technicianId;
     private final String technicianName;
     private final String title;
     private final String priority;
@@ -14,12 +15,13 @@ public class MaintenanceTicket {
     private final LocalDateTime reportedAt;
 
     public MaintenanceTicket(int id, String assetTag, String equipmentName, String reporterName,
-                             String technicianName, String title, String priority,
+                             int technicianId, String technicianName, String title, String priority,
                              String status, LocalDateTime reportedAt) {
         this.id = id;
         this.assetTag = assetTag;
         this.equipmentName = equipmentName;
         this.reporterName = reporterName;
+        this.technicianId = technicianId;
         this.technicianName = technicianName;
         this.title = title;
         this.priority = priority;
@@ -41,6 +43,10 @@ public class MaintenanceTicket {
 
     public String getReporterName() {
         return reporterName;
+    }
+
+    public int getTechnicianId() {
+        return technicianId;
     }
 
     public String getTechnicianName() {

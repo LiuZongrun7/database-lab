@@ -29,16 +29,16 @@ Equipment 页面读取的是 `v_equipment_status` 视图，所以页面可以显
 5. 同一个事务里把设备状态改成 `MAINTENANCE`；
 6. commit。
 
-技术员把工单改成 `RESOLVED` 或 `CLOSED` 后，设备状态会变回 `AVAILABLE`。
+技术员点击“接单”后，系统会把当前用户记录为维修人员，并把工单改成 `IN_PROGRESS`。接单技术员或管理员点击“修好”后，工单变成 `RESOLVED`。只有同一台设备的所有未完成工单都结束后，设备状态才会变回 `AVAILABLE`。
 
 ## 你要自己手动做的事
 
-- 用 `student1` 登录并上报一个设备问题。
+- 用 `student_net` 登录并上报一个设备问题。
 - 用 `admin` 登录，新增一台设备，再编辑它。
 - 把一台不再使用的设备标记为 `RETIRED`。
 - 确认设备状态变成 `MAINTENANCE`。
-- 用 `tech` 登录并把工单改成 `RESOLVED`。
-- 确认设备状态变回 `AVAILABLE`。
+- 用 `tech` 登录，先点击“接单”，修好后点击“修好”。
+- 如果同一台设备没有其他未完成工单，确认设备状态变回 `AVAILABLE`。
 - 截 Equipment 和 Maintenance 页面的图。
 
 ## 答辩可能问你
@@ -57,7 +57,7 @@ A: 一个维修工单可能有多次进度更新，单独建表可以保存历�
 
 ### Q: 维修工单有哪些状态？
 
-A: `OPEN`、`ASSIGNED`、`IN_PROGRESS`、`RESOLVED`、`CLOSED`。
+A: `OPEN`、`IN_PROGRESS`、`RESOLVED`。
 
 ### Q: 为什么 `technician_id` 可以为空？
 

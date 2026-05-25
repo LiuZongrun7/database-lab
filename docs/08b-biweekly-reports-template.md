@@ -23,7 +23,7 @@ I worked on project coordination and the reservation workflow plan. I helped dec
 
 ### Member B
 
-I focused on database design. I drafted the ER model and mapped the main entities to relational tables. I also considered primary keys, foreign keys, and many-to-many tables such as course members and equipment-course access. My main challenge was keeping the schema complex enough without adding unnecessary tables.
+I focused on database design. I drafted the ER model and mapped the main entities to relational tables. I also considered primary keys, foreign keys, and many-to-many tables such as student-lab membership and reservation consumable requests. My main challenge was keeping the schema complex enough without adding unnecessary tables.
 
 ### Member C
 
@@ -39,11 +39,11 @@ I worked on UI planning, testing ideas, and documentation structure. I helped or
 
 ## Week 12 Group Self-Assessment Draft
 
-During Weeks 10 and 11, we completed most of the implementation. The reservation module can now create pending requests, support multiple equipment items in one request, record consumable needs, reject overlapping times, and support teacher/admin approval. The maintenance module can create tickets and automatically move equipment into maintenance status. The inventory module supports new consumable item types, stock changes, and negative-stock prevention. We also added management reports based on SQL views and aggregation queries. The system now has a web interface with role-based tabs for equipment, reservations, maintenance, inventory, and reports. Our biggest improvement was connecting database rules with Java service transactions instead of only displaying static data.
+During Weeks 10 and 11, we completed most of the core implementation. The reservation module can now create pending requests, support single-equipment fixed-slot scheduling, record optional consumable needs, reject overlapping times, support cancellation, enforce student-lab access, and support administrator approval. The maintenance module can create tickets and automatically move equipment into maintenance status; equipment only returns to available status after all active tickets are finished. The inventory module supports new consumable item types, stock changes, stock transaction history, and negative-stock prevention. We also added management reports based on SQL views and aggregation queries. The system now has a web interface with role-based workspaces and tabs for equipment, reservations, maintenance, inventory, and reports. Our biggest improvement was connecting database rules with Java service transactions instead of only displaying static data.
 
 ## Week 12 Group Plan Draft
 
-For the final stage, we will focus on testing, documentation, and presentation. We will run automated tests and manual UI tests, update the report with screenshots and diagrams, prepare the video script, and practise answering database design questions. We also need to check that every member can explain their own module and at least understand the overall ER model, reservation transaction, and inventory transaction. Finally, we will package the source code and data in a zip file and submit the PDF report and video separately.
+For the final stage, we will focus on testing, documentation, and presentation. We will run the full MySQL integration tests and manual UI tests, update the report with current screenshots and diagrams, prepare the five-minute video script, and practise answering database design questions. We also need to check that every member can explain their own module and at least understand the overall ER model, reservation transaction, maintenance transaction, and inventory transaction. Finally, we will package the source code and data in a zip file and submit the PDF report and video separately.
 
 ## Week 12 Individual Self-Assessment Drafts
 
@@ -53,7 +53,7 @@ I implemented and tested the reservation workflow, including request creation, s
 
 ### Member B
 
-I finalised the database schema and seed data. I added constraints, indexes, views, and link tables such as `course_members`, `equipment_course_access`, and `reservation_consumables` to support the main system functions. I also checked that the ER diagram matches the SQL schema and prepared explanations for the relational mapping.
+I finalised the database schema and seed data. I added constraints, indexes, views, and link tables such as `student_labs` and `reservation_consumables` to support the main system functions. I also checked that the ER diagram matches the SQL schema and prepared explanations for the relational mapping.
 
 ### Member C
 

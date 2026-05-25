@@ -2,6 +2,8 @@ DROP VIEW IF EXISTS v_equipment_status;
 DROP VIEW IF EXISTS v_lab_usage_report;
 DROP VIEW IF EXISTS v_user_reservation_history;
 
+DROP TABLE IF EXISTS equipment_course_access;
+DROP TABLE IF EXISTS course_members;
 DROP TABLE IF EXISTS stock_transactions;
 DROP TABLE IF EXISTS reservation_consumables;
 DROP TABLE IF EXISTS consumables;
@@ -10,21 +12,20 @@ DROP TABLE IF EXISTS maintenance_tickets;
 DROP TABLE IF EXISTS approvals;
 DROP TABLE IF EXISTS reservation_equipment;
 DROP TABLE IF EXISTS reservations;
-DROP TABLE IF EXISTS equipment_course_access;
-DROP TABLE IF EXISTS course_members;
 DROP TABLE IF EXISTS courses;
 DROP TABLE IF EXISTS equipment;
+DROP TABLE IF EXISTS student_labs;
 DROP TABLE IF EXISTS labs;
 DROP TABLE IF EXISTS users;
 
--- Users cover four real system roles. Self-registration only creates STUDENT rows.
+-- Users cover three real system roles. Self-registration only creates STUDENT rows.
 CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(40) NOT NULL UNIQUE,
     password VARCHAR(80) NOT NULL,
     full_name VARCHAR(80) NOT NULL,
     email VARCHAR(120) NOT NULL UNIQUE,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'TEACHER', 'STUDENT', 'TECHNICIAN')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'STUDENT', 'TECHNICIAN')),
     penalty_points INT NOT NULL DEFAULT 0 CHECK (penalty_points >= 0),
     active BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -55,36 +56,18 @@ CREATE TABLE equipment (
     CONSTRAINT fk_equipment_lab FOREIGN KEY (lab_id) REFERENCES labs(lab_id)
 );
 
--- Courses and course_members show a many-to-many relationship from the database lectures.
-CREATE TABLE courses (
-    course_id INT AUTO_INCREMENT PRIMARY KEY,
-    course_code VARCHAR(20) NOT NULL UNIQUE,
-    course_name VARCHAR(120) NOT NULL,
-    teacher_id INT NOT NULL,
-    CONSTRAINT fk_course_teacher FOREIGN KEY (teacher_id) REFERENCES users(user_id)
-);
-
-CREATE TABLE course_members (
-    course_id INT NOT NULL,
+-- Students may belong to multiple labs. This controls which equipment they can reserve.
+CREATE TABLE student_labs (
     user_id INT NOT NULL,
-    member_role VARCHAR(20) NOT NULL CHECK (member_role IN ('TEACHER', 'STUDENT')),
-    PRIMARY KEY (course_id, user_id),
-    CONSTRAINT fk_course_member_course FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE,
-    CONSTRAINT fk_course_member_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE equipment_course_access (
-    equipment_id INT NOT NULL,
-    course_id INT NOT NULL,
-    PRIMARY KEY (equipment_id, course_id),
-    CONSTRAINT fk_access_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id) ON DELETE CASCADE,
-    CONSTRAINT fk_access_course FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE
+    lab_id INT NOT NULL,
+    PRIMARY KEY (user_id, lab_id),
+    CONSTRAINT fk_student_lab_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_student_lab_lab FOREIGN KEY (lab_id) REFERENCES labs(lab_id) ON DELETE CASCADE
 );
 
 CREATE TABLE reservations (
     reservation_id INT AUTO_INCREMENT PRIMARY KEY,
     requester_id INT NOT NULL,
-    course_id INT,
     equipment_id INT NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
@@ -93,7 +76,6 @@ CREATE TABLE reservations (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_reservation_time CHECK (end_time > start_time),
     CONSTRAINT fk_res_requester FOREIGN KEY (requester_id) REFERENCES users(user_id),
-    CONSTRAINT fk_res_course FOREIGN KEY (course_id) REFERENCES courses(course_id),
     CONSTRAINT fk_res_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id)
 );
 
@@ -118,7 +100,7 @@ CREATE TABLE maintenance_tickets (
     title VARCHAR(120) NOT NULL,
     description VARCHAR(500) NOT NULL,
     priority VARCHAR(15) NOT NULL CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED')),
     reported_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP,
     CONSTRAINT fk_ticket_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id),
@@ -170,7 +152,7 @@ CREATE TABLE stock_transactions (
 );
 
 CREATE INDEX idx_reservation_time ON reservations(start_time, end_time);
-CREATE INDEX idx_reservation_equipment_slot ON reservations(equipment_id, start_time, end_time);
+CREATE INDEX idx_reservation_slot_lookup ON reservations(equipment_id, start_time, end_time);
 CREATE INDEX idx_reservation_status ON reservations(status);
 CREATE INDEX idx_ticket_status ON maintenance_tickets(status);
 CREATE INDEX idx_equipment_status ON equipment(status);
@@ -195,7 +177,7 @@ JOIN labs l ON e.lab_id = l.lab_id
 LEFT JOIN (
     SELECT equipment_id, COUNT(*) AS open_count
     FROM maintenance_tickets
-    WHERE status IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS')
+    WHERE status IN ('OPEN', 'IN_PROGRESS')
     GROUP BY equipment_id
 ) open_tickets ON e.equipment_id = open_tickets.equipment_id;
 

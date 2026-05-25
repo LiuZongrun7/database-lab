@@ -28,15 +28,15 @@ When a user reports a problem:
 4. it updates the equipment status to `MAINTENANCE`;
 5. it commits both changes together.
 
-When a technician updates a ticket to `RESOLVED` or `CLOSED`, the service sets the equipment status back to `AVAILABLE`.
+When a technician accepts a ticket, the service assigns that user and changes the ticket to `IN_PROGRESS`. When the assigned technician or an admin marks it repaired, the ticket becomes `RESOLVED`. The equipment status returns to `AVAILABLE` only when all active tickets for that equipment are finished.
 
 ## Manual Things You Should Do
 
-- Login as `student1` and report a problem for available equipment.
+- Login as `student_net` and report a problem for available equipment.
 - Login as `admin`, create a piece of equipment, edit it, and retire it.
 - Check that equipment status becomes `MAINTENANCE`.
-- Login as `tech` and update the ticket to `RESOLVED`.
-- Check that equipment status becomes `AVAILABLE`.
+- Login as `tech`, accept the ticket, and then mark it repaired.
+- Check that equipment status becomes `AVAILABLE` if there are no other active tickets for the same equipment.
 - Prepare screenshots of both pages.
 
 ## Possible Viva Questions
@@ -55,7 +55,7 @@ A: Deleting can break historical relationships with reservations, tickets, and r
 
 Q: What statuses can a ticket have?
 
-A: `OPEN`, `ASSIGNED`, `IN_PROGRESS`, `RESOLVED`, and `CLOSED`.
+A: `OPEN`, `IN_PROGRESS`, and `RESOLVED`.
 
 Q: Why is `technician_id` nullable?
 

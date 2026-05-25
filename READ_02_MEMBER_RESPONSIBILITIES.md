@@ -8,7 +8,7 @@ Main responsibility:
 
 - project setup and integration;
 - web server startup and login flow;
-- reservation request workflow, including selecting multiple equipment items;
+- reservation request workflow, including single-equipment fixed-slot scheduling;
 - consumable needs submitted with a reservation;
 - approval/rejection workflow;
 - run instructions and demo coordination.
@@ -30,7 +30,7 @@ Must be able to explain:
 - how to run the project;
 - how a reservation request is created;
 - how single-equipment fixed-slot reservations are checked;
-- how overlapping time is checked for each selected equipment item;
+- how overlapping time is checked for the selected equipment item;
 - how reservation consumable requests are stored;
 - why transaction and `FOR UPDATE` are used.
 
@@ -62,7 +62,7 @@ Must be able to explain:
 - many-to-many relationships;
 - primary keys and foreign keys;
 - constraints and views;
-- why `equipment_course_access` and `reservation_consumables` are separate tables;
+- why `student_labs` and `reservation_consumables` are separate tables;
 - why approvals and stock transactions are separate tables.
 
 ## Member C - Equipment and Maintenance
@@ -129,7 +129,7 @@ Main responsibility:
 - web page layout and browser interactions;
 - role-based navigation;
 - student self-registration;
-- collapsed equipment picker and selected equipment summary;
+- single-equipment picker and fixed-slot schedule;
 - model classes;
 - login support;
 - automated tests;
@@ -144,7 +144,6 @@ Files to read:
 - `src/main/java/edu/ucd/comp2013j/lab/web/Json.java`
 - `src/main/java/edu/ucd/comp2013j/lab/model/*.java`
 - `src/main/java/edu/ucd/comp2013j/lab/dao/UserDao.java`
-- `src/main/java/edu/ucd/comp2013j/lab/dao/CourseDao.java`
 - `src/main/java/edu/ucd/comp2013j/lab/service/AuthService.java`
 - `src/test/java/edu/ucd/comp2013j/lab/SystemServiceTest.java`
 - `READ_04_FRONTEND_UI_GUIDE.md`

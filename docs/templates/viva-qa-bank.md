@@ -14,7 +14,7 @@ We chose it because it is less generic than a normal library or shopping system,
 
 ### Q3. What are the main roles?
 
-The roles are student, teacher, technician, and administrator. Students request reservations and report problems. Teachers approve or reject reservations. Technicians update maintenance tickets and manage stock. Administrators can access all main functions.
+The roles are student, technician, and administrator. Students request reservations and report problems. Technicians update maintenance tickets and manage stock. Administrators approve or reject reservations and can access all main functions.
 
 ### Q4. What is the most important feature?
 
@@ -24,11 +24,11 @@ The most important feature is reservation management with conflict checking. The
 
 ### Q5. How many tables are in your database?
 
-There are 12 main tables: users, labs, equipment, courses, course_members, equipment_course_access, reservations, approvals, maintenance_tickets, maintenance_updates, consumables, and stock_transactions.
+There are 11 main tables: users, labs, student_labs, equipment, reservations, reservation_consumables, approvals, maintenance_tickets, maintenance_updates, consumables, and stock_transactions.
 
 ### Q6. Give an example of a many-to-many relationship.
 
-Users and courses are many-to-many because one user can join several courses and one course can have many users. We use `course_members` as the junction table. Equipment and courses are also many-to-many, using `equipment_course_access`.
+Students and labs are many-to-many because one student can belong to several labs and one lab can have many students. We use `student_labs` as the junction table.
 
 ### Q7. Why do you have an approvals table?
 
@@ -80,7 +80,7 @@ If the ticket is created but equipment status is not changed, broken equipment c
 
 ### Q17. How does equipment become available again?
 
-When a technician or admin updates the ticket to `RESOLVED` or `CLOSED`, the service updates the related equipment status back to `AVAILABLE`.
+When a technician accepts a ticket, the system changes it to `IN_PROGRESS`. When the assigned technician or an admin marks it repaired, the ticket becomes `RESOLVED`. The service then checks whether the same equipment still has any active ticket, and equipment returns to `AVAILABLE` only when all active tickets are finished.
 
 ## Inventory
 

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>实验室设备管理系统</title>
-    <link rel="stylesheet" href="style.css?v=20260525-guards">
+    <link rel="stylesheet" href="style.css?v=20260525-lab-access">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.min.css">
 </head>
 <body>
@@ -29,7 +29,7 @@
     <section id="loginView" class="login-panel">
         <p class="eyebrow">Campus Laboratory Service</p>
         <h2 data-i18n="login.title">实验室设备服务</h2>
-        <p class="hint" data-i18n="login.description" style="margin-bottom: 18px; margin-top: 0; border: none; background: none; padding: 0;">按身份进入对应工作台，完成预约、审批、维修和库存处理。</p>
+        <p class="hint" data-i18n="login.description" style="margin-bottom: 18px; margin-top: 0; border: none; background: none; padding: 0;">按身份进入对应工作台，完成预约、审核、维修和库存处理。</p>
         <form id="loginForm" class="form-grid">
             <label>
                 <span data-i18n="form.username">用户名</span>
@@ -37,14 +37,14 @@
             </label>
             <label>
                 <span data-i18n="form.password">密码</span>
-                <input name="password" type="password" value="admin123" required>
+                <input name="password" type="password" value="123" required>
             </label>
             <div class="login-actions">
                 <button type="submit" data-i18n="action.login"><i class="icon-log-in"></i> 登录</button>
                 <button type="button" id="registerButton" class="secondary" data-i18n="action.registerStudent"><i class="icon-user-plus"></i> 注册学生账号</button>
             </div>
         </form>
-        <p class="hint" data-i18n="login.demoAccounts">演示账号：admin/admin123，teacher/teacher123，student1/student123，tech/tech123</p>
+        <p class="hint" data-i18n="login.demoAccounts">演示账号：admin/123，tech/123，student_ai/123，student_bio/123，student_net/123，student_multi/123</p>
     </section>
 
     <section id="appView" class="app-view hidden">
@@ -56,8 +56,6 @@
             <button class="tab" data-tab="reports" data-i18n="nav.reports"><i class="icon-bar-chart"></i> 统计报表</button>
             <button id="logoutButton" class="logout tab" type="button" data-i18n="nav.logout"><i class="icon-log-out"></i> 退出登录</button>
         </nav>
-
-        <section id="roleWorkspace" class="role-workspace"></section>
 
         <section id="equipment" class="tab-page active">
             <div class="section-head">
@@ -96,7 +94,7 @@
             <div class="section-head">
                 <div>
                     <h2 data-i18n="reservations.title">预约管理</h2>
-                    <p data-i18n="reservations.subtitle">提交设备预约申请，并处理待审批预约。</p>
+                    <p data-i18n="reservations.subtitle">学生提交关联实验室设备预约，管理员处理待审批预约。</p>
                 </div>
                 <button type="button" id="refreshReservations" class="secondary" data-i18n="action.refresh"><i class="icon-refresh-cw"></i> 刷新</button>
             </div>
@@ -106,7 +104,7 @@
                     <div class="request-section-head">
                         <div>
                             <h3 data-i18n="reservation.selectEquipment">选择设备</h3>
-                            <p data-i18n="reservation.selectEquipmentHint">先选择一台设备，再从下方时间表选择可预约时段。</p>
+                            <p data-i18n="reservation.selectEquipmentHint">学生只能看到并预约自己所属实验室的设备。</p>
                         </div>
                     </div>
                     <input type="hidden" name="equipmentIds" id="reservationEquipmentIds">
@@ -124,7 +122,6 @@
                     <div id="slotSummary" class="selection-summary">请选择设备后查看可预约时段。</div>
                     <div id="reservationSlots" class="slot-board"></div>
                 </div>
-                <label><span data-i18n="form.course">课程</span> <select name="courseId" id="reservationCourse"></select></label>
                 <label class="wide"><span data-i18n="form.purpose">用途</span> <input name="purpose" placeholder="简单说明为什么要使用这台设备" data-i18n-placeholder="reservation.purposePlaceholder" required></label>
                 <div class="wide request-section">
                     <div class="request-section-head">
@@ -268,6 +265,6 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=20260525-guards"></script>
+<script src="app.js?v=20260525-actions"></script>
 </body>
 </html>

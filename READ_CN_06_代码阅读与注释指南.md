@@ -23,7 +23,7 @@
 
 - `ReservationService.requestReservation()` 里的事务注释；
 - `ReservationDao.hasTimeConflict()` 里的时间重叠解释；
-- `ReservationDao.create()` 里说明一条预约可以关联多台设备和耗材需求；
+- `ReservationDao.create()` 里说明一条预约直接关联一台设备，并可关联耗材需求；
 - `app.js` 里 `createReservation()` 对 `equipmentIds` 和 `consumableRequests` 格式的说明。
 
 答辩时可以说：预约不是简单插入一行，而是先锁设备、检查冲突，再写预约、设备关联和耗材需求。

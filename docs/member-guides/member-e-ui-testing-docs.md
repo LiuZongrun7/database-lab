@@ -14,7 +14,6 @@ Web front-end, role-based navigation, student registration, model classes, authe
 - `src/main/java/edu/ucd/comp2013j/lab/web/Json.java`
 - `src/main/java/edu/ucd/comp2013j/lab/model/*.java`
 - `src/main/java/edu/ucd/comp2013j/lab/dao/UserDao.java`
-- `src/main/java/edu/ucd/comp2013j/lab/dao/CourseDao.java`
 - `src/main/java/edu/ucd/comp2013j/lab/service/AuthService.java`
 - `src/test/java/edu/ucd/comp2013j/lab/SystemServiceTest.java`
 - `docs/07-test-document.md`
@@ -31,7 +30,7 @@ The front-end is built with HTML, CSS, and JavaScript:
 
 The Java web server is in `LabWebServer.java`. It serves the static web files and provides API endpoints such as `/api/login`, `/api/equipment`, `/api/reservations/create`, `/api/maintenance/update`, and `/api/inventory/change`.
 
-The current UI also includes student self-registration, role-specific tabs, a collapsed equipment picker with a selected-equipment summary, admin equipment controls, and an admin consumable creation button.
+The current UI also includes student self-registration with required lab selection, role-specific tabs, a fixed-slot equipment picker, admin equipment controls, and an admin consumable creation button.
 
 The browser does not directly access the database. The flow is:
 
@@ -82,7 +81,7 @@ A: `app.js` uses `fetch()` to call API endpoints. The Java server handles the re
 
 Q: Why does self-registration only create student accounts?
 
-A: Admin, teacher, and technician accounts have higher permissions. In a real system, those accounts should be created or approved by an administrator.
+A: Admin and technician accounts have higher permissions. In a real system, those accounts should be created or approved by an administrator.
 
 Q: What is the purpose of the model classes?
 

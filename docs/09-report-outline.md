@@ -15,12 +15,12 @@ This outline follows the assignment requirements and can be used to write the fi
 Content to include:
 - Background problem: shared lab equipment is hard to manage manually.
 - System goal: manage reservations, approvals, equipment, maintenance, inventory, registration, and reports.
-- Main users: student, teacher, technician, administrator.
+- Main users: student, technician, administrator.
 - Assumptions and limitations.
 
 Suggested paragraph:
 
-The system is designed for a university laboratory environment where different courses and users share expensive equipment. It supports student registration, equipment browsing, single-equipment fixed-slot reservation requests, approval decisions, maintenance tickets, consumable stock management, and management reports. The project is implemented with a Web front-end using HTML, CSS, and JavaScript, plus a Java JDBC back-end and a MySQL database.
+The system is designed for a university laboratory environment where students use shared laboratory equipment under lab-based access rules. It supports student registration with linked labs, equipment browsing, single-equipment fixed-slot reservation requests, admin approval decisions, maintenance tickets, consumable stock management, and management reports. The project is implemented with a Web front-end using HTML, CSS, and JavaScript, plus a Java JDBC back-end and a MySQL database.
 
 ## 2. Requirements
 
@@ -40,7 +40,7 @@ Include:
 ## 4. Database Design
 
 Include:
-- ER diagram.
+- Chen-style conceptual ER diagram for the main business entities.
 - Entity descriptions.
 - Relational schema.
 - Explanation of many-to-many relationships.
@@ -124,7 +124,6 @@ Possible future improvements:
 - email notifications;
 - QR code check-in;
 - equipment image upload;
-- web version;
 - role permission table instead of hard-coded roles.
 
 ## Appendices

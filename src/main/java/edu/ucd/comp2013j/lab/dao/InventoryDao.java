@@ -3,6 +3,7 @@ package edu.ucd.comp2013j.lab.dao;
 import edu.ucd.comp2013j.lab.db.Database;
 import edu.ucd.comp2013j.lab.db.Db;
 import edu.ucd.comp2013j.lab.model.Consumable;
+import edu.ucd.comp2013j.lab.model.User;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,20 +22,40 @@ public class InventoryDao {
     }
 
     public List<Consumable> findAll() {
-        String sql = """
+        return findVisibleFor(null);
+    }
+
+    public List<Consumable> findVisibleFor(User user) {
+        boolean studentOnly = user != null && "STUDENT".equals(user.getRole());
+        StringBuilder sql = new StringBuilder("""
                 SELECT c.consumable_id, l.lab_code, c.item_name, c.unit, c.quantity, c.reorder_level
                 FROM consumables c
                 JOIN labs l ON c.lab_id = l.lab_id
-                ORDER BY l.lab_code, c.item_name
-                """;
+                WHERE 1 = 1
+                """);
+        if (studentOnly) {
+            sql.append("""
+                      AND EXISTS (
+                          SELECT 1
+                          FROM student_labs sl
+                          WHERE sl.lab_id = c.lab_id
+                            AND sl.user_id = ?
+                      )
+                    """);
+        }
+        sql.append(" ORDER BY l.lab_code, c.item_name");
         try (Connection connection = database.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            List<Consumable> items = new ArrayList<>();
-            while (rs.next()) {
-                items.add(mapConsumable(rs));
+             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            if (studentOnly) {
+                ps.setInt(1, user.getId());
             }
-            return items;
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Consumable> items = new ArrayList<>();
+                while (rs.next()) {
+                    items.add(mapConsumable(rs));
+                }
+                return items;
+            }
         } catch (SQLException ex) {
             throw Db.fail(ex);
         }

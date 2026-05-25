@@ -24,11 +24,11 @@ The front-end is a web interface written with HTML, CSS, and JavaScript. The Jav
 
 ### What are the main tables?
 
-`users`, `labs`, `equipment`, `courses`, `course_members`, `equipment_course_access`, `reservations`, `approvals`, `maintenance_tickets`, `maintenance_updates`, `consumables`, and `stock_transactions`.
+`users`, `labs`, `student_labs`, `equipment`, `reservations`, `reservation_consumables`, `approvals`, `maintenance_tickets`, `maintenance_updates`, `consumables`, and `stock_transactions`.
 
 ### Give one many-to-many relationship.
 
-Users and courses are many-to-many, so we use `course_members`. Equipment and courses are also many-to-many, so we use `equipment_course_access`.
+Students and labs are many-to-many, so we use `student_labs`. One student can belong to several labs, and one lab can contain many students. The reservation service uses this table to stop students from booking equipment outside their linked labs.
 
 ### Why do you have an approvals table?
 
@@ -82,7 +82,7 @@ We ran automated tests using `mvn test`. They cover login, reservation conflict 
 
 ### Strongest database design point
 
-The strongest point is that the system is not only CRUD. It has reservation conflict checking, many-to-many relationships, approval history, maintenance workflow, stock transaction history, SQL views, and transactions.
+The strongest point is that the system is not only CRUD. It has lab-based access control, reservation conflict checking, many-to-many relationships, approval history, maintenance workflow, stock transaction history, SQL views, and transactions.
 
 ### Main limitation
 

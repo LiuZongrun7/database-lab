@@ -10,7 +10,7 @@
 
 ### Q2. 为什么它是 information system？
 
-因为它存储和处理结构化信息，包括用户、实验室、设备、课程、预约、审批、维修、库存和报表。用户可以通过 Web 页面对这些信息进行查询、新增、更新和分析。
+因为它存储和处理结构化信息，包括用户、实验室、学生所属实验室、设备、预约、审批、维修、库存和报表。用户可以通过 Web 页面对这些信息进行查询、新增、更新和分析。
 
 ### Q3. 为什么适合数据库课程？
 
@@ -26,13 +26,11 @@
 
 主要有：
 
-`users`、`labs`、`equipment`、`courses`、`course_members`、`equipment_course_access`、`reservations`、`approvals`、`maintenance_tickets`、`maintenance_updates`、`consumables`、`stock_transactions`。
+`users`、`labs`、`student_labs`、`equipment`、`reservations`、`reservation_consumables`、`approvals`、`maintenance_tickets`、`maintenance_updates`、`consumables`、`stock_transactions`。
 
 ### Q6. 举一个多对多关系。
 
-用户和课程是多对多，一个用户可以参加多个课程，一个课程也有多个用户，所以用 `course_members` 作为中间表。
-
-另一个例子是设备和课程：一个设备可以被多个课程使用，一个课程也可以使用多个设备，所以用 `equipment_course_access`。
+学生和实验室是多对多，一个学生可以属于多个实验室，一个实验室也可以有多个学生，所以用 `student_labs` 作为中间表。预约服务会用这个表限制学生只能预约自己关联实验室里的设备。
 
 ### Q7. 为什么要有 `approvals` 表？
 
@@ -107,7 +105,7 @@ existing.start_time < new_end AND existing.end_time > new_start
 
 ### Q18. 这个项目最强的数据库点是什么？
 
-它不只是增删改查。它有预约冲突检查、多对多关系、审批历史、维修流程、库存流水、SQL 视图和事务。
+它不只是增删改查。它有基于实验室的预约权限、预约冲突检查、多对多关系、审批历史、维修流程、库存流水、SQL 视图和事务。
 
 ### Q19. 最大限制是什么？
 
@@ -125,7 +123,7 @@ existing.start_time < new_end AND existing.end_time > new_start
 
 ### Member B
 
-我负责数据库设计，可以解释 ER 图、关系模型、多对多关系、约束、视图和索引。
+我负责数据库设计，可以解释 ER 图、关系模型、`student_labs` 多对多关系、约束、视图和索引。
 
 ### Member C
 

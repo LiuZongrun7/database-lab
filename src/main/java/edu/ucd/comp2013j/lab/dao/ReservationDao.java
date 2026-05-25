@@ -51,24 +51,19 @@ public class ReservationDao {
         }
     }
 
-    public int create(Connection connection, int equipmentId, int requesterId, Integer courseId,
-                      LocalDateTime start, LocalDateTime end, String purpose,
+    public int create(Connection connection, int equipmentId, int requesterId, LocalDateTime start,
+                      LocalDateTime end, String purpose,
                       Map<Integer, Integer> consumableRequests) throws SQLException {
         String sql = """
-                INSERT INTO reservations (requester_id, course_id, equipment_id, start_time, end_time, purpose, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'PENDING')
+                INSERT INTO reservations (requester_id, equipment_id, start_time, end_time, purpose, status)
+                VALUES (?, ?, ?, ?, ?, 'PENDING')
                 """;
         try (PreparedStatement ps = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, requesterId);
-            if (courseId == null) {
-                ps.setNull(2, java.sql.Types.INTEGER);
-            } else {
-                ps.setInt(2, courseId);
-            }
-            ps.setInt(3, equipmentId);
-            ps.setTimestamp(4, Timestamp.valueOf(start));
-            ps.setTimestamp(5, Timestamp.valueOf(end));
-            ps.setString(6, purpose);
+            ps.setInt(2, equipmentId);
+            ps.setTimestamp(3, Timestamp.valueOf(start));
+            ps.setTimestamp(4, Timestamp.valueOf(end));
+            ps.setString(5, purpose);
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -87,14 +82,14 @@ public class ReservationDao {
                        purpose, consumable_needs, status
                 FROM v_user_reservation_history
                 """;
-        if (!user.isAdmin() && !user.isTeacher()) {
+        if (!user.isAdmin()) {
             sql += " WHERE requester_id = ?";
         }
         sql += " ORDER BY start_time DESC";
 
         try (Connection connection = database.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
-            if (!user.isAdmin() && !user.isTeacher()) {
+            if (!user.isAdmin()) {
                 ps.setInt(1, user.getId());
             }
             try (ResultSet rs = ps.executeQuery()) {
@@ -136,13 +131,19 @@ public class ReservationDao {
         String sql = """
                 UPDATE reservations
                 SET status = 'CANCELLED'
-                WHERE reservation_id = ? AND requester_id = ? AND status IN ('PENDING', 'APPROVED')
+                WHERE reservation_id = ?
+                  AND requester_id = ?
+                  AND status IN ('PENDING', 'APPROVED')
+                  AND start_time > CURRENT_TIMESTAMP
                 """;
         try (Connection connection = database.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, reservationId);
             ps.setInt(2, requesterId);
-            ps.executeUpdate();
+            int changed = ps.executeUpdate();
+            if (changed != 1) {
+                throw new IllegalArgumentException("Only future pending or approved reservations can be cancelled");
+            }
         } catch (SQLException ex) {
             throw Db.fail(ex);
         }

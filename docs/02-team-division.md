@@ -85,7 +85,6 @@ Main files:
 - `src/main/java/edu/ucd/comp2013j/lab/web/FormData.java`
 - `src/main/java/edu/ucd/comp2013j/lab/web/Json.java`
 - `src/main/java/edu/ucd/comp2013j/lab/dao/UserDao.java`
-- `src/main/java/edu/ucd/comp2013j/lab/dao/CourseDao.java`
 - `src/main/java/edu/ucd/comp2013j/lab/service/AuthService.java`
 - `src/test/java/edu/ucd/comp2013j/lab/SystemServiceTest.java`
 - `docs/06-development-plan.md`

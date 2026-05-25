@@ -10,8 +10,8 @@ Goals:
 
 Planned tasks:
 - Choose campus laboratory equipment reservation and maintenance as the system scenario.
-- List student, teacher, technician, and admin roles.
-- Draft the main entities: users, labs, equipment, reservations, approvals, maintenance tickets, consumables, stock transactions.
+- List student, technician, and admin roles.
+- Draft the main entities: users, labs, student-lab membership, equipment, reservations, approvals, maintenance tickets, consumables, stock transactions.
 - Set up Git/Maven project.
 
 ## Week 9

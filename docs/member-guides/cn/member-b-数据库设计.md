@@ -18,15 +18,14 @@
 
 - 用户和角色：`users`
 - 实验室和设备：`labs`, `equipment`
-- 课程和访问权限：`courses`, `course_members`, `equipment_course_access`
+- 学生实验室访问权限：`student_labs`
 - 预约和审批：`reservations`, `reservation_consumables`, `approvals`
 - 维修：`maintenance_tickets`, `maintenance_updates`
 - 库存：`consumables`, `stock_transactions`
 
-两个多对多关系：
+多对多关系：
 
-- 用户和课程：用 `course_members`
-- 设备和课程：用 `equipment_course_access`
+- 学生和实验室：用 `student_labs`
 - 预约和设备：`reservations.equipment_id` 直接引用设备
 - 预约和耗材需求：用 `reservation_consumables`
 

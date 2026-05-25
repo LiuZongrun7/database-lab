@@ -23,11 +23,12 @@ The most important part is the reservation transaction. In `ReservationService.r
 2. starts a database transaction;
 3. locks the selected equipment row with `FOR UPDATE`;
 4. checks whether the equipment status allows booking;
-5. checks whether another pending or approved reservation overlaps the requested time for the selected equipment item;
-6. inserts a new reservation with `PENDING` status;
-7. stores the selected equipment in `reservations.equipment_id`;
-8. inserts optional consumable needs into `reservation_consumables`;
-9. commits if everything is valid, otherwise rolls back.
+5. checks whether a student requester is linked to the equipment's lab;
+6. checks whether another pending or approved reservation overlaps the requested time for the selected equipment item;
+7. inserts a new reservation with `PENDING` status;
+8. stores the selected equipment in `reservations.equipment_id`;
+9. inserts optional consumable needs into `reservation_consumables`;
+10. commits if everything is valid, otherwise rolls back.
 
 The overlap condition is:
 
@@ -39,11 +40,11 @@ This catches partial overlap, full overlap, and surrounding overlap.
 
 - Run `mvn test`.
 - Run `DB_PASSWORD='your_mysql_root_password' mvn exec:java`.
-- Create one valid reservation as `student1`.
+- Create one valid reservation as `student_net`.
 - Select more than one equipment item in one reservation.
 - Add one consumable request to the reservation.
 - Try to create one conflicting reservation and confirm it is rejected.
-- Login as `teacher` and approve a pending reservation.
+- Login as `admin` and approve a pending reservation.
 - Take screenshots for the report.
 
 ## Possible Viva Questions
@@ -54,7 +55,7 @@ A: Because checking availability and inserting the reservation must happen as on
 
 Q: Why is the reservation first set to `PENDING`?
 
-A: Some equipment can be high-risk or shared between courses, so a teacher or admin should approve it before use.
+A: Some equipment can be high-risk or shared between labs, so an admin should approve it before use.
 
 Q: Why does the reservation table contain `equipment_id`?
 

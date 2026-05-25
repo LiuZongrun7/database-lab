@@ -16,20 +16,20 @@ This project uses a web front-end written with HTML, CSS, and JavaScript. The Ja
 | --- | --- | --- |
 | `/api/login` | POST | Login and return user info. |
 | `/api/register` | POST | Register a new student account. |
-| `/api/labs` | GET | List labs for admin forms. |
-| `/api/equipment` | GET | List or search equipment. |
+| `/api/labs` | GET | List labs for admin and registration forms. |
+| `/api/equipment` | GET | List or search equipment visible to the current user. |
 | `/api/equipment/save` | POST | Admin creates or updates equipment. |
 | `/api/equipment/retire` | POST | Admin marks equipment as retired. |
-| `/api/courses` | GET | List courses visible to current user. |
 | `/api/users/technicians` | GET | List technicians for maintenance assignment. |
 | `/api/reservations` | GET | List reservations visible to current user. |
+| `/api/reservations/slots` | GET | List fixed-slot availability for one equipment item. |
 | `/api/reservations/create` | POST | Create a reservation request. |
 | `/api/reservations/decide` | POST | Approve or reject a reservation. |
 | `/api/reservations/cancel` | POST | Cancel user's own active reservation. |
 | `/api/maintenance` | GET | List maintenance tickets. |
 | `/api/maintenance/report` | POST | Report equipment problem. |
-| `/api/maintenance/update` | POST | Update maintenance ticket. |
-| `/api/inventory` | GET | List consumable stock. |
+| `/api/maintenance/update` | POST | Accept a maintenance ticket or mark it repaired. |
+| `/api/inventory` | GET | List consumable stock visible to the current user. |
 | `/api/inventory/add` | POST | Admin creates a new consumable item type. |
 | `/api/inventory/change` | POST | Change stock amount. |
 | `/api/reports/lab-usage` | GET | Lab usage report. |
@@ -60,18 +60,20 @@ Input:
 - `password`
 - `fullName`
 - `email`
+- `labIds`
 
 Output:
 - new `User`
 
 Rule:
 - self-registration always creates role `STUDENT`.
+- at least one lab id is required and stored in `student_labs`.
 
 ## Equipment
 
-### `EquipmentDao.findAll()`
+### `EquipmentDao.findVisibleFor(User user)`
 
-Purpose: return all equipment with lab and open ticket count.
+Purpose: return equipment with lab and open ticket count. Students only see equipment from labs linked in `student_labs`.
 
 Output:
 - `List<Equipment>`
@@ -79,9 +81,9 @@ Output:
 Related SQL:
 - Reads from `v_equipment_status`.
 
-### `EquipmentDao.search(String keyword)`
+### `EquipmentDao.searchVisibleFor(User user, String keyword)`
 
-Purpose: search by asset tag, equipment name, or category.
+Purpose: search visible equipment by asset tag, equipment name, or category.
 
 Input:
 - `keyword`
@@ -112,7 +114,6 @@ Purpose: create a pending reservation after validating time, equipment status, a
 Input:
 - `equipmentIds`
 - `requesterId`
-- `courseId`
 - `start`
 - `end`
 - `purpose`
@@ -124,7 +125,8 @@ Output:
 Validation:
 - end time must be after start time.
 - purpose cannot be blank.
-- each selected equipment item must be `AVAILABLE` or `RESERVED`.
+- the selected equipment item must be `AVAILABLE` or `RESERVED`.
+- student requesters can only reserve equipment from their linked labs.
 - overlapping `PENDING` or `APPROVED` reservations are not allowed.
 
 Transaction:
@@ -176,21 +178,20 @@ Database changes:
 Transaction:
 - Ticket creation and equipment status update are committed together.
 
-### `MaintenanceService.updateTicket(...)`
+### `MaintenanceService.handleTicketAction(...)`
 
-Purpose: assign or update a maintenance ticket.
+Purpose: handle the controlled maintenance actions from the web UI.
 
 Input:
 - `ticketId`
-- `technicianId`
-- `status`
+- `action` (`ACCEPT` or `RESOLVE`)
 - `userId`
-- `note`
 
 Database changes:
-- Updates ticket technician and status.
+- `ACCEPT` assigns the current technician/admin and changes the ticket from `OPEN` to `IN_PROGRESS`.
+- `RESOLVE` changes an assigned in-progress ticket to `RESOLVED`.
 - Inserts into `maintenance_updates`.
-- If status is `RESOLVED` or `CLOSED`, equipment status is set back to `AVAILABLE`.
+- When no active ticket remains for the same equipment, equipment status is set back to `AVAILABLE`.
 
 ## Inventory
 

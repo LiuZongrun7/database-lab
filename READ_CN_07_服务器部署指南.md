@@ -78,10 +78,12 @@ http://服务器IP:8081/
 演示账号：
 
 ```text
-admin/admin123
-teacher/teacher123
-student1/student123
-tech/tech123
+admin/123
+tech/123
+student_ai/123
+student_bio/123
+student_net/123
+student_multi/123
 ```
 
 ## 5. 重要注意：数据库初始化模式

@@ -10,8 +10,7 @@ University laboratories often share expensive equipment between modules, researc
 
 ## Users
 
-- Student: views equipment, submits reservation requests, reports equipment problems, views own reservations.
-- Teacher: views all reservations, approves or rejects requests, checks equipment usage.
+- Student: views linked-lab equipment, submits reservation requests, reports equipment problems, views own reservations.
 - Technician: handles maintenance tickets, updates repair status, manages consumable stock.
 - Administrator: has full access to equipment, reservations, maintenance, inventory, and reports.
 
@@ -20,20 +19,21 @@ University laboratories often share expensive equipment between modules, researc
 1. The system shall allow users to log in using a username and password.
 2. The system shall display equipment with lab, category, risk level, status, and open ticket count.
 3. The system shall allow users to search equipment by asset tag, name, or category.
-4. The system shall allow users to create reservation requests with equipment, course, start time, end time, and purpose.
+4. The system shall allow students to create reservation requests with equipment, fixed time slot, and purpose.
 5. The system shall reject reservation requests when the equipment is already booked for an overlapping time period.
 6. The system shall reject reservation requests when equipment is in maintenance or retired status.
-7. The system shall allow teachers and administrators to approve or reject pending reservations.
-8. The system shall allow users to cancel their own active reservations.
-9. The system shall allow users to report equipment faults.
-10. The system shall automatically move faulty equipment to maintenance status when a maintenance ticket is created.
-11. The system shall allow technicians and administrators to assign and update maintenance tickets.
-12. The system shall return equipment to available status when a ticket is resolved or closed.
-13. The system shall show consumable stock for each laboratory.
-14. The system shall allow technicians and administrators to increase or decrease consumable stock.
-15. The system shall prevent stock quantity from becoming negative.
-16. The system shall record every stock change in a stock transaction table.
-17. The system shall provide simple management reports for lab usage and equipment status.
+7. The system shall reject student reservation requests for equipment outside the student's linked labs.
+8. The system shall allow administrators to approve or reject pending reservations.
+9. The system shall allow users to cancel their own active reservations.
+10. The system shall allow users to report equipment faults.
+11. The system shall automatically move faulty equipment to maintenance status when a maintenance ticket is created.
+12. The system shall allow technicians and administrators to accept maintenance tickets and mark repairs finished.
+13. The system shall return equipment to available status when all active tickets are resolved.
+14. The system shall show consumable stock for each laboratory.
+15. The system shall allow technicians and administrators to increase or decrease consumable stock.
+16. The system shall prevent stock quantity from becoming negative.
+17. The system shall record every stock change in a stock transaction table.
+18. The system shall provide simple management reports for lab usage and equipment status.
 
 ## Non-Functional Requirements
 
@@ -54,7 +54,8 @@ University laboratories often share expensive equipment between modules, researc
 ## Main Success Criteria
 
 - A student can submit a reservation request.
-- A teacher can approve that request.
+- The request is limited to equipment in the student's linked labs.
+- An administrator can approve that request.
 - A conflicting request is blocked by the database service logic.
 - A reported fault creates a maintenance ticket and changes equipment status.
 - A technician can update the maintenance ticket.

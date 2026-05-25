@@ -31,14 +31,16 @@ DB_PASSWORD='your_mysql_root_password' mvn test
 
 | ID | Test | Expected Result |
 | --- | --- | --- |
-| AT-01 | Login with `admin/admin123` | Login succeeds. |
+| AT-01 | Login with `admin/123` | Login succeeds. |
 | AT-02 | Login with wrong password | Login fails. |
 | AT-03 | Register a new student account | Account is created and can login. |
 | AT-04 | Submit reservation overlapping an existing booking | System rejects it with a conflict message. |
-| AT-05 | Decrease stock below zero | System rejects it. |
-| AT-06 | Decrease stock by a valid amount | Quantity is updated by the correct amount. |
-| AT-07 | Add a new consumable item type | New consumable row appears in inventory. |
-| AT-08 | Report maintenance problem | Equipment status changes to `MAINTENANCE`. |
+| AT-05 | Submit reservation for a lab the student is not linked to | System rejects it. |
+| AT-06 | Decrease stock below zero | System rejects it. |
+| AT-07 | Decrease stock by a valid amount | Quantity is updated by the correct amount. |
+| AT-08 | Add a new consumable item type | New consumable row appears in inventory. |
+| AT-09 | Report maintenance problem | Equipment status changes to `MAINTENANCE`. |
+| AT-10 | Finish one of several active maintenance tickets | Equipment stays in `MAINTENANCE` until all active tickets are finished. |
 
 ## Manual Test Cases
 
@@ -46,7 +48,7 @@ DB_PASSWORD='your_mysql_root_password' mvn test
 
 Steps:
 1. Run `DB_PASSWORD='your_mysql_root_password' mvn exec:java`.
-2. Enter `admin` and `admin123`.
+2. Enter `admin` and `123`.
 3. Click Login.
 
 Expected result:
@@ -58,7 +60,7 @@ Expected result:
 Steps:
 1. Open the login page.
 2. Click Register Student Account.
-3. Fill username, full name, email, and password.
+3. Fill username, full name, email, password, and at least one linked lab.
 4. Submit the dialog.
 
 Expected result:
@@ -78,13 +80,12 @@ Expected result:
 ### MT-04 Create Reservation
 
 Steps:
-1. Login as `student1/student123`.
+1. Login as `student_ai/123`.
 2. Open Reservations tab.
-3. Open the equipment picker.
-4. Select one or more available equipment items.
+3. Select one available equipment item from the linked-lab equipment picker.
+4. Select one green fixed slot.
 5. Optionally add one consumable request.
-6. Enter a future time using the date-time controls.
-7. Enter a purpose and submit.
+6. Enter a purpose and submit.
 
 Expected result:
 - A new reservation appears with status `PENDING`.
@@ -92,7 +93,7 @@ Expected result:
 ### MT-05 Approve Reservation
 
 Steps:
-1. Login as `teacher/teacher123`.
+1. Login as `admin/123`.
 2. Open Reservations tab.
 3. Select a pending reservation.
 4. Click Approve.
@@ -104,7 +105,7 @@ Expected result:
 ### MT-06 Reject Reservation
 
 Steps:
-1. Login as `teacher/teacher123`.
+1. Login as `admin/123`.
 2. Select a pending reservation.
 3. Click Reject.
 
@@ -114,7 +115,7 @@ Expected result:
 ### MT-07 Report Maintenance Problem
 
 Steps:
-1. Login as `student1/student123`.
+1. Login as `student_ai/123`.
 2. Open Equipment tab.
 3. Select equipment with `AVAILABLE` status.
 4. Click Report Problem.
@@ -124,23 +125,23 @@ Expected result:
 - A maintenance ticket is created.
 - Equipment status changes to `MAINTENANCE`.
 
-### MT-08 Update Maintenance Ticket
+### MT-08 Accept And Repair Maintenance Ticket
 
 Steps:
-1. Login as `tech/tech123`.
+1. Login as `tech/123`.
 2. Open Maintenance tab.
 3. Select an open ticket.
-4. Click Update Ticket.
-5. Select status `RESOLVED` and submit.
+4. Click Accept.
+5. Click Repaired after the ticket is in progress.
 
 Expected result:
 - Ticket status changes to `RESOLVED`.
-- Equipment status changes back to `AVAILABLE`.
+- Equipment status changes back to `AVAILABLE` if this was the last active ticket for that equipment.
 
 ### MT-09 Add Consumable Type
 
 Steps:
-1. Login as `admin/admin123`.
+1. Login as `admin/123`.
 2. Open Inventory tab.
 3. Click Add Consumable.
 4. Fill lab, item name, unit, quantity, and reorder level.
@@ -151,7 +152,7 @@ Expected result:
 ### MT-10 Change Stock
 
 Steps:
-1. Login as `tech/tech123`.
+1. Login as `tech/123`.
 2. Open Inventory tab.
 3. Select a consumable.
 4. Click Change Stock.

@@ -17,9 +17,9 @@ Campus Laboratory Equipment Reservation and Maintenance System
 - 用户登录；
 - 查看和搜索实验室设备；
 - 提交设备预约申请；
-- 老师或管理员审批预约；
+- 管理员审核预约；
 - 用户上报设备故障；
-- 技术员更新维修工单；
+- 技术员接单并标记维修完成；
 - 管理实验室耗材库存；
 - 记录库存变动历史；
 - 查看管理报表。
@@ -81,27 +81,30 @@ http://localhost:8080
 
 | 用户名 | 密码 | 角色 |
 | --- | --- | --- |
-| admin | admin123 | ADMIN |
-| teacher | teacher123 | TEACHER |
-| student1 | student123 | STUDENT |
-| tech | tech123 | TECHNICIAN |
+| admin | 123 | ADMIN |
+| tech | 123 | TECHNICIAN |
+| student_ai | 123 | STUDENT |
+| student_bio | 123 | STUDENT |
+| student_net | 123 | STUDENT |
+| student_multi | 123 | STUDENT |
 
 ## 推荐演示流程
 
-1. 用 `student1/student123` 登录。
+1. 用 `student_ai/123` 登录。
 2. 在 Equipment 页面搜索设备。
 3. 在 Reservations 页面提交预约申请。
-4. 用 `teacher/teacher123` 登录。
+4. 用 `admin/123` 登录。
 5. 审批刚才的预约。
 6. 上报一个设备故障。
-7. 用 `tech/tech123` 登录。
-8. 更新维修工单。
+7. 用 `tech/123` 登录。
+8. 接单并标记维修完成。
 9. 修改库存。
 10. 打开 Reports 页面展示报表。
 
 ## 答辩时最重要的数据库点
 
-- `course_members` 和 `equipment_course_access` 是多对多关系表。
+- `student_labs` 是学生和实验室之间的多对多关系表。
+- 学生只能预约自己关联实验室里的设备。
 - `reservations` 有预约时间冲突检查。
 - `approvals` 用来保存审批历史。
 - `maintenance_tickets` 和 `maintenance_updates` 保存维修流程和更新记录。

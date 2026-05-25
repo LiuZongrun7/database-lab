@@ -2,7 +2,6 @@ package edu.ucd.comp2013j.lab.web;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import edu.ucd.comp2013j.lab.dao.CourseDao;
 import edu.ucd.comp2013j.lab.dao.EquipmentDao;
 import edu.ucd.comp2013j.lab.dao.InventoryDao;
 import edu.ucd.comp2013j.lab.dao.MaintenanceDao;
@@ -11,7 +10,6 @@ import edu.ucd.comp2013j.lab.dao.ReservationDao;
 import edu.ucd.comp2013j.lab.dao.UserDao;
 import edu.ucd.comp2013j.lab.db.Database;
 import edu.ucd.comp2013j.lab.model.Consumable;
-import edu.ucd.comp2013j.lab.model.Course;
 import edu.ucd.comp2013j.lab.model.Equipment;
 import edu.ucd.comp2013j.lab.model.MaintenanceTicket;
 import edu.ucd.comp2013j.lab.model.ReportRow;
@@ -44,7 +42,6 @@ public class LabWebServer {
     private final int port;
     private final UserDao userDao;
     private final EquipmentDao equipmentDao;
-    private final CourseDao courseDao;
     private final ReservationDao reservationDao;
     private final MaintenanceDao maintenanceDao;
     private final InventoryDao inventoryDao;
@@ -64,7 +61,6 @@ public class LabWebServer {
         this.port = port;
         this.userDao = new UserDao(database);
         this.equipmentDao = new EquipmentDao(database);
-        this.courseDao = new CourseDao(database);
         this.reservationDao = new ReservationDao(database);
         this.maintenanceDao = new MaintenanceDao(database);
         this.inventoryDao = new InventoryDao(database);
@@ -86,7 +82,6 @@ public class LabWebServer {
             server.createContext("/api/equipment", api(this::handleEquipment));
             server.createContext("/api/equipment/save", api(this::handleSaveEquipment));
             server.createContext("/api/equipment/retire", api(this::handleRetireEquipment));
-            server.createContext("/api/courses", api(this::handleCourses));
             server.createContext("/api/users/technicians", api(this::handleTechnicians));
             server.createContext("/api/reservations", api(this::handleReservations));
             server.createContext("/api/reservations/slots", api(this::handleReservationSlots));
@@ -128,7 +123,8 @@ public class LabWebServer {
                 form.get("username"),
                 form.get("password"),
                 form.get("fullName"),
-                form.get("email")
+                form.get("email"),
+                parseIdList(form.get("labIds"))
         );
         sendJson(exchange, userJson(user, "Registration finished."));
     }
@@ -137,7 +133,10 @@ public class LabWebServer {
         onlyGet(exchange);
         List<Map<String, ?>> rows = new ArrayList<>();
         String keyword = queryParam(exchange, "q");
-        List<Equipment> equipment = keyword.isBlank() ? equipmentDao.findAll() : equipmentDao.search(keyword);
+        User user = currentUser(exchange);
+        List<Equipment> equipment = keyword.isBlank()
+                ? equipmentDao.findVisibleFor(user)
+                : equipmentDao.searchVisibleFor(user, keyword);
         for (Equipment e : equipment) {
             rows.add(Json.row(
                     "id", e.getId(),
@@ -210,16 +209,6 @@ public class LabWebServer {
         sendJson(exchange, Json.ok("Equipment retired."));
     }
 
-    private void handleCourses(HttpExchange exchange) throws IOException {
-        onlyGet(exchange);
-        User user = currentUser(exchange);
-        List<Map<String, ?>> rows = new ArrayList<>();
-        for (Course c : courseDao.findCoursesForUser(user)) {
-            rows.add(Json.row("id", c.getId(), "code", c.getCode(), "name", c.getName()));
-        }
-        sendJson(exchange, Json.array(rows));
-    }
-
     private void handleTechnicians(HttpExchange exchange) throws IOException {
         onlyGet(exchange);
         List<Map<String, ?>> rows = new ArrayList<>();
@@ -241,6 +230,8 @@ public class LabWebServer {
                     "requesterName", r.getRequesterName(),
                     "startTime", r.getStartTime().format(TIME_FORMAT),
                     "endTime", r.getEndTime().format(TIME_FORMAT),
+                    "canCancel", r.getStartTime().isAfter(LocalDateTime.now())
+                            && ("PENDING".equals(r.getStatus()) || "APPROVED".equals(r.getStatus())),
                     "status", r.getStatus(),
                     "purpose", r.getPurpose(),
                     "consumableNeeds", r.getConsumableNeeds()
@@ -257,7 +248,12 @@ public class LabWebServer {
         LocalDate startDate = rawDate.isBlank() ? LocalDate.now() : LocalDate.parse(rawDate);
         Integer requestedDays = query.getOptionalInt("days");
         int days = requestedDays == null ? 7 : requestedDays;
-        sendJson(exchange, Json.array(reservationService.fixedSlotAvailability(equipmentId, startDate, days)));
+        sendJson(exchange, Json.array(reservationService.fixedSlotAvailability(
+                equipmentId,
+                query.getInt("userId"),
+                startDate,
+                days
+        )));
     }
 
     private void handleCreateReservation(HttpExchange exchange) throws IOException {
@@ -266,7 +262,6 @@ public class LabWebServer {
         int id = reservationService.requestReservation(
                 parseIdList(form.get("equipmentIds")),
                 form.getInt("userId"),
-                form.getOptionalInt("courseId"),
                 LocalDateTime.parse(form.get("startTime"), TIME_FORMAT),
                 LocalDateTime.parse(form.get("endTime"), TIME_FORMAT),
                 form.get("purpose"),
@@ -279,7 +274,7 @@ public class LabWebServer {
         onlyPost(exchange);
         FormData form = FormData.from(exchange);
         User user = userFromForm(form);
-        requireTeacherOrAdmin(user);
+        requireAdmin(user);
         reservationService.decideReservation(
                 form.getInt("reservationId"),
                 user.getId(),
@@ -305,6 +300,7 @@ public class LabWebServer {
                     "assetTag", t.getAssetTag(),
                     "equipmentName", t.getEquipmentName(),
                     "reporterName", t.getReporterName(),
+                    "technicianId", t.getTechnicianId(),
                     "technicianName", t.getTechnicianName(),
                     "title", t.getTitle(),
                     "priority", t.getPriority(),
@@ -333,20 +329,20 @@ public class LabWebServer {
         FormData form = FormData.from(exchange);
         User user = userFromForm(form);
         requireTechnicianOrAdmin(user);
-        maintenanceService.updateTicket(
+        maintenanceService.handleTicketAction(
                 form.getInt("ticketId"),
-                form.getOptionalInt("technicianId"),
-                form.get("status"),
+                form.get("action"),
                 user.getId(),
-                form.get("note")
+                user.isAdmin()
         );
         sendJson(exchange, Json.ok("Maintenance ticket updated."));
     }
 
     private void handleInventory(HttpExchange exchange) throws IOException {
         onlyGet(exchange);
+        User user = currentUser(exchange);
         List<Map<String, ?>> rows = new ArrayList<>();
-        for (Consumable c : inventoryDao.findAll()) {
+        for (Consumable c : inventoryDao.findVisibleFor(user)) {
             rows.add(Json.row(
                     "id", c.getId(),
                     "labCode", c.getLabCode(),
@@ -435,12 +431,6 @@ public class LabWebServer {
     private void requireAdmin(User user) {
         if (!user.isAdmin()) {
             throw new IllegalArgumentException("Admin permission required");
-        }
-    }
-
-    private void requireTeacherOrAdmin(User user) {
-        if (!user.isAdmin() && !user.isTeacher()) {
-            throw new IllegalArgumentException("Teacher or admin permission required");
         }
     }
 

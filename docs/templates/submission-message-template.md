@@ -44,10 +44,12 @@ Before submitting:
 
 | Username | Password | Role |
 | --- | --- | --- |
-| admin | admin123 | ADMIN |
-| teacher | teacher123 | TEACHER |
-| student1 | student123 | STUDENT |
-| tech | tech123 | TECHNICIAN |
+| admin | 123 | ADMIN |
+| tech | 123 | TECHNICIAN |
+| student_ai | 123 | STUDENT |
+| student_bio | 123 | STUDENT |
+| student_net | 123 | STUDENT |
+| student_multi | 123 | STUDENT |
 
 ## Run Instructions For Report
 

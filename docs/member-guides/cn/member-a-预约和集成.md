@@ -25,11 +25,12 @@
 2. 开启数据库事务；
 3. 用 `FOR UPDATE` 锁定选中的设备；
 4. 检查设备状态是否允许预约；
-5. 检查同一个设备在同一时间段有没有冲突；
-6. 插入一条 `PENDING` 状态的预约；
-7. 把选中的单台设备直接写入 `reservations.equipment_id`；
-8. 把随预约提交的耗材需求写入 `reservation_consumables`；
-9. 成功就 commit，失败就 rollback。
+5. 如果申请人是学生，检查他是否关联了该设备所在实验室；
+6. 检查同一个设备在同一时间段有没有冲突；
+7. 插入一条 `PENDING` 状态的预约；
+8. 把选中的单台设备直接写入 `reservations.equipment_id`；
+9. 把随预约提交的耗材需求写入 `reservation_consumables`；
+10. 成功就 commit，失败就 rollback。
 
 时间冲突条件：
 
@@ -42,11 +43,11 @@ existing.start_time < new_end AND existing.end_time > new_start
 - 运行 `mvn test`。
 - 运行 `DB_PASSWORD='你的MySQL密码' mvn exec:java`。
 - 浏览器打开 `http://localhost:8080`。
-- 用 `student1` 创建一个预约。
+- 用 `student_net` 创建一个预约。
 - 在同一个预约里选择两台设备。
 - 给预约添加一个耗材需求。
 - 创建一个冲突时间的预约，确认会被拒绝。
-- 用 `teacher` 登录并审批预约。
+- 用 `admin` 登录并审批预约。
 - 给 report 截图。
 
 ## 答辩可能问你
@@ -57,7 +58,7 @@ A: 因为检查设备状态、检查时间冲突和插入预约应该作为一�
 
 ### Q: 为什么预约一开始是 `PENDING`？
 
-A: 因为有些设备比较重要或者高风险，需要老师或管理员审批后才能正式使用。
+A: 因为有些设备比较重要或者高风险，需要管理员审批后才能正式使用。
 
 ### Q: 为什么现在预约表直接使用 `equipment_id`？
 

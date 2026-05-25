@@ -22,6 +22,7 @@ public class MaintenanceDao {
     public List<MaintenanceTicket> findAll() {
         String sql = """
                 SELECT mt.ticket_id, e.asset_tag, e.equipment_name, reporter.full_name AS reporter_name,
+                       mt.technician_id,
                        tech.full_name AS technician_name, mt.title, mt.priority, mt.status, mt.reported_at
                 FROM maintenance_tickets mt
                 JOIN equipment e ON mt.equipment_id = e.equipment_id
@@ -46,7 +47,7 @@ public class MaintenanceDao {
         String sql = """
                 SELECT COUNT(*) AS active_count
                 FROM maintenance_tickets
-                WHERE equipment_id = ? AND status IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS')
+                WHERE equipment_id = ? AND status IN ('OPEN', 'IN_PROGRESS')
                 """;
         try (Connection connection = database.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -89,7 +90,7 @@ public class MaintenanceDao {
         String sql = """
                 UPDATE maintenance_tickets
                 SET technician_id = ?, status = ?,
-                    resolved_at = CASE WHEN ? IN ('RESOLVED', 'CLOSED') THEN CURRENT_TIMESTAMP ELSE resolved_at END
+                    resolved_at = CASE WHEN ? = 'RESOLVED' THEN CURRENT_TIMESTAMP ELSE resolved_at END
                 WHERE ticket_id = ?
                 """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -123,6 +124,7 @@ public class MaintenanceDao {
                 rs.getString("asset_tag"),
                 rs.getString("equipment_name"),
                 rs.getString("reporter_name"),
+                rs.getInt("technician_id"),
                 technician,
                 rs.getString("title"),
                 rs.getString("priority"),

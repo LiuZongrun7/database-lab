@@ -28,18 +28,17 @@ Submission Date: `1 June 2026`
 
 ### 1.1 Background
 
-University laboratories often contain equipment that is shared by multiple courses, students, teachers, and technicians. If the equipment is managed manually using spreadsheets or messages, several problems can happen: two users may reserve the same equipment at the same time, faulty equipment may still be booked, maintenance records may be incomplete, and consumable stock changes may not be tracked.
+University laboratories often contain equipment that is shared by different student groups, labs, and technicians. If the equipment is managed manually using spreadsheets or messages, several problems can happen: two users may reserve the same equipment at the same time, faulty equipment may still be booked, maintenance records may be incomplete, and consumable stock changes may not be tracked.
 
-Our project solves this problem by building a Java-based information system for campus laboratory equipment reservation and maintenance. The system supports equipment browsing, reservation requests, teacher approval, maintenance ticket handling, consumable stock management, and management reports.
+Our project solves this problem by building a Java-based information system for campus laboratory equipment reservation and maintenance. The system supports equipment browsing, lab-based reservation requests, admin approval, maintenance ticket handling, consumable stock management, and management reports.
 
 ### 1.2 System Users
 
-The system has four main user roles:
+The system has three main user roles:
 
 | Role | Description |
 | --- | --- |
-| Student | Searches equipment, submits reservation requests, cancels own requests, reports equipment problems. |
-| Teacher | Reviews reservation requests, approves or rejects bookings, views reports. |
+| Student | Searches linked-lab equipment, submits reservation requests, cancels own requests, reports equipment problems. |
 | Technician | Updates maintenance tickets and manages consumable inventory. |
 | Administrator | Has full access to reservations, maintenance, inventory, and reports. |
 
@@ -71,13 +70,13 @@ This project is designed as a database coursework system rather than a productio
 | FR-01 | The system shall allow users to log in. |
 | FR-02 | The system shall display equipment information, including lab, category, status, risk level, and open ticket count. |
 | FR-03 | The system shall allow equipment search by keyword. |
-| FR-04 | The system shall allow users to create reservation requests. |
+| FR-04 | The system shall allow students to create reservation requests for linked-lab equipment. |
 | FR-05 | The system shall reject reservations with overlapping time for the same equipment. |
 | FR-06 | The system shall reject reservations for equipment in maintenance or retired status. |
-| FR-07 | The system shall allow teachers and administrators to approve or reject requests. |
+| FR-07 | The system shall allow administrators to approve or reject requests. |
 | FR-08 | The system shall allow users to report equipment faults. |
 | FR-09 | The system shall create maintenance tickets and update equipment status. |
-| FR-10 | The system shall allow technicians to update ticket status. |
+| FR-10 | The system shall allow technicians or administrators to accept open tickets and mark assigned repairs as repaired. |
 | FR-11 | The system shall allow stock changes for consumables. |
 | FR-12 | The system shall prevent negative stock. |
 | FR-13 | The system shall record stock transaction history. |
@@ -131,17 +130,16 @@ Insert diagrams from `docs/03-uml-modeling.md`:
 
 ### 4.1 Database Overview
 
-The database contains 12 tables:
+The database contains 11 active tables:
 
 | Table | Purpose |
 | --- | --- |
-| `users` | Stores students, teachers, technicians, and administrators. |
+| `users` | Stores students, technicians, and administrators. |
 | `labs` | Stores laboratory rooms. |
+| `student_labs` | Maps students to the labs they can use. |
 | `equipment` | Stores equipment and current equipment status. |
-| `courses` | Stores course information. |
-| `course_members` | Maps users to courses. |
-| `equipment_course_access` | Maps equipment to courses. |
 | `reservations` | Stores reservation requests and booking status. |
+| `reservation_consumables` | Stores optional consumable needs submitted with a reservation. |
 | `approvals` | Stores approval or rejection decisions. |
 | `maintenance_tickets` | Stores equipment fault reports. |
 | `maintenance_updates` | Stores ticket progress history. |
@@ -150,13 +148,13 @@ The database contains 12 tables:
 
 ### 4.2 ER Diagram
 
-Insert ER diagram from `docs/04-database-design.md`.
+Insert the Chen-style conceptual ER diagram from `docs/chen-er-diagram-current.png`. When explaining it, mention the teacher-style notation: double lines mean total participation, the double rectangle/double diamond pair shows the dependent maintenance update notes, dashed ovals show derived report attributes, and the `d` circle shows disjoint user roles. Use the physical schema diagram only as a supporting appendix if the report needs to show every bridge/history table.
 
 ### 4.3 Important Relationships
 
-The relationship between users and courses is many-to-many, so the table `course_members` is used. The relationship between equipment and courses is also many-to-many, so the table `equipment_course_access` is used.
+The relationship between students and labs is many-to-many, so the table `student_labs` is used. This table also supports the business rule that students can only reserve equipment in linked labs.
 
-Each reservation is linked to one user and one equipment item. A reservation can also be linked to a course. Each approval record is linked to one reservation and one approver. Each maintenance ticket is linked to one equipment item and one reporter, and it may also be linked to one technician.
+Each reservation is linked to one user and directly references one equipment item through `reservations.equipment_id`. A reservation can include optional consumable needs through `reservation_consumables`. Each approval record is linked to one reservation and one approver. Each maintenance ticket is linked to one equipment item and one reporter, and it may also be linked to one technician.
 
 ### 4.4 Constraints
 
@@ -164,7 +162,7 @@ The schema includes several constraints:
 
 - primary keys for all tables;
 - foreign keys for relationships;
-- unique constraints for username, email, lab code, asset tag, and course code;
+- unique constraints for username, email, lab code, and asset tag;
 - check constraints for role, equipment status, reservation status, priority, and non-negative quantity;
 - reservation time check to make sure `end_time > start_time`.
 
@@ -175,16 +173,16 @@ The project uses three views:
 | View | Purpose |
 | --- | --- |
 | `v_equipment_status` | Shows equipment with lab data and open ticket count. |
-| `v_user_reservation_history` | Shows reservation history with user and equipment details. |
+| `v_user_reservation_history` | Shows reservation history with user, equipment, and consumable request details. |
 | `v_lab_usage_report` | Aggregates reservation counts by lab. |
 
 ### 4.6 Transactions
 
-Reservation creation uses a transaction. The system locks the selected equipment row, checks status, checks time conflict, inserts the reservation, and then commits. If any check fails, the transaction rolls back.
+Reservation creation uses a transaction. The system validates that the request uses one fixed slot, locks the selected equipment row, checks status, checks time conflict, inserts the reservation with `equipment_id`, inserts optional consumable requests, and then commits. If any check fails, the transaction rolls back.
 
 Inventory update also uses a transaction. The system locks the consumable row, calculates the new stock quantity, rejects the update if it would become negative, updates quantity, inserts stock transaction history, and commits.
 
-Maintenance reporting uses a transaction to insert a maintenance ticket and change equipment status to `MAINTENANCE` together.
+Maintenance reporting uses a transaction to insert a maintenance ticket and change equipment status to `MAINTENANCE` together. When a ticket is resolved, equipment returns to `AVAILABLE` only if there are no other active tickets for the same equipment.
 
 ## 5. Implementation
 
@@ -213,13 +211,13 @@ Insert screenshots:
 
 ### 5.3 Module Explanation
 
-The reservation module is implemented mainly in `ReservationService`, `ReservationDao`, and `ReservationPanel`. The service layer checks business rules and controls transactions, while the DAO layer contains SQL statements.
+The reservation module is implemented mainly in `ReservationService`, `ReservationDao`, `LabWebServer`, and the web front-end files in `src/main/resources/web`. The service layer checks business rules and controls transactions, while the DAO layer contains SQL statements.
 
-The maintenance module is implemented mainly in `MaintenanceService`, `MaintenanceDao`, `EquipmentDao`, `EquipmentPanel`, and `MaintenancePanel`. A reported equipment problem creates a ticket and changes equipment status.
+The maintenance module is implemented mainly in `MaintenanceService`, `MaintenanceDao`, `EquipmentDao`, `LabWebServer`, and the web front-end files. A reported equipment problem creates a ticket and changes equipment status.
 
-The inventory module is implemented mainly in `InventoryService`, `InventoryDao`, and `InventoryPanel`. It records current stock and stock change history.
+The inventory module is implemented mainly in `InventoryService`, `InventoryDao`, `LabWebServer`, and the web front-end files. It records current stock and stock change history.
 
-The report module is implemented in `ReportDao` and `ReportPanel`. It uses SQL views and aggregation queries.
+The report module is implemented in `ReportDao`, `LabWebServer`, and the Reports tab in the web front-end. It uses SQL views and aggregation queries.
 
 ## 6. Testing
 
@@ -228,12 +226,12 @@ The report module is implemented in `ReportDao` and `ReportPanel`. It uses SQL v
 The automated tests are written in `SystemServiceTest.java`. They can be run using:
 
 ```bash
-mvn test
+DB_PASSWORD='your_mysql_root_password' mvn test
 ```
 
 Test result:
 
-`Tests run: 5, Failures: 0, Errors: 0`
+`Tests run: 8, Failures: 0, Errors: 0`
 
 ### 6.2 Automated Test Summary
 
@@ -241,10 +239,13 @@ Test result:
 | --- | --- |
 | Login with valid admin account | Login succeeds. |
 | Login with wrong password | Login fails. |
+| Student registration | A new student account is created and can log in. |
 | Overlapping reservation | Request is rejected. |
 | Negative stock update | Request is rejected. |
 | Valid stock update | Quantity changes correctly. |
+| Add consumable type | New consumable row appears. |
 | Maintenance report | Equipment status becomes maintenance. |
+| Multiple active maintenance tickets | Equipment stays in maintenance until all active tickets are finished. |
 
 ### 6.3 Manual Testing
 

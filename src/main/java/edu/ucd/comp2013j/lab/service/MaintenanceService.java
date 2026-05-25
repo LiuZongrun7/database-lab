@@ -48,25 +48,15 @@ public class MaintenanceService {
         }
     }
 
-    public void updateTicket(int ticketId, Integer technicianId, String status, int userId, String note) {
-        if (status == null || status.isBlank()) {
-            throw new IllegalArgumentException("Status is required");
+    public void handleTicketAction(int ticketId, String action, int userId, boolean admin) {
+        if (action == null || action.isBlank()) {
+            throw new IllegalArgumentException("Maintenance action is required");
         }
-        if (note == null || note.isBlank()) {
-            note = "Status changed to " + status;
-        }
-
         try (Connection connection = database.getConnection()) {
             connection.setAutoCommit(false);
             try {
-                maintenanceDao.assign(connection, ticketId, technicianId, status, userId, note.trim());
-                int equipmentId = findTicketEquipment(connection, ticketId);
-                if (isActiveTicketStatus(status)) {
-                    setEquipmentStatus(connection, equipmentId, "MAINTENANCE");
-                } else if (isFinishedTicketStatus(status) && !hasActiveTickets(connection, equipmentId)) {
-                    // A device can return to booking only when all its open repair tickets are finished.
-                    setEquipmentStatus(connection, equipmentId, "AVAILABLE");
-                }
+                TicketState ticket = findTicketState(connection, ticketId);
+                applyAction(connection, ticketId, ticket, action.trim(), userId, admin);
                 connection.commit();
             } catch (RuntimeException | SQLException ex) {
                 connection.rollback();
@@ -79,13 +69,44 @@ public class MaintenanceService {
         }
     }
 
-    private int findTicketEquipment(Connection connection, int ticketId) throws SQLException {
+    private void applyAction(Connection connection, int ticketId, TicketState ticket, String action, int userId, boolean admin)
+            throws SQLException {
+        if ("ACCEPT".equals(action)) {
+            if (!"OPEN".equals(ticket.status())) {
+                throw new IllegalArgumentException("Only open tickets can be accepted");
+            }
+            maintenanceDao.assign(connection, ticketId, userId, "IN_PROGRESS", userId, "Ticket accepted.");
+            setEquipmentStatus(connection, ticket.equipmentId(), "MAINTENANCE");
+            return;
+        }
+        if ("RESOLVE".equals(action)) {
+            if (!"IN_PROGRESS".equals(ticket.status())) {
+                throw new IllegalArgumentException("Only in-progress tickets can be marked as repaired");
+            }
+            if (!admin && ticket.technicianId() != userId) {
+                throw new IllegalArgumentException("Only the assigned technician or an admin can mark this ticket repaired");
+            }
+            maintenanceDao.assign(connection, ticketId, userId, "RESOLVED", userId, "Repair finished.");
+            if (!hasActiveTickets(connection, ticket.equipmentId())) {
+                // A device can return to booking only when all its open repair tickets are finished.
+                setEquipmentStatus(connection, ticket.equipmentId(), "AVAILABLE");
+            }
+            return;
+        }
+        throw new IllegalArgumentException("Unknown maintenance action");
+    }
+
+    private TicketState findTicketState(Connection connection, int ticketId) throws SQLException {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT equipment_id FROM maintenance_tickets WHERE ticket_id = ?")) {
+                "SELECT equipment_id, technician_id, status FROM maintenance_tickets WHERE ticket_id = ?")) {
             ps.setInt(1, ticketId);
             try (var rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt("equipment_id");
+                    return new TicketState(
+                            rs.getInt("equipment_id"),
+                            rs.getInt("technician_id"),
+                            rs.getString("status")
+                    );
                 }
             }
         }
@@ -96,7 +117,7 @@ public class MaintenanceService {
         try (PreparedStatement ps = connection.prepareStatement("""
                 SELECT COUNT(*) AS active_count
                 FROM maintenance_tickets
-                WHERE equipment_id = ? AND status IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS')
+                WHERE equipment_id = ? AND status IN ('OPEN', 'IN_PROGRESS')
                 """)) {
             ps.setInt(1, equipmentId);
             try (var rs = ps.executeQuery()) {
@@ -115,11 +136,6 @@ public class MaintenanceService {
         }
     }
 
-    private boolean isActiveTicketStatus(String status) {
-        return "OPEN".equals(status) || "ASSIGNED".equals(status) || "IN_PROGRESS".equals(status);
-    }
-
-    private boolean isFinishedTicketStatus(String status) {
-        return "RESOLVED".equals(status) || "CLOSED".equals(status);
+    private record TicketState(int equipmentId, int technicianId, String status) {
     }
 }
