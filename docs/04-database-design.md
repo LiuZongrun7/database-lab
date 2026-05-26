@@ -6,149 +6,67 @@ The database stores users, laboratories, student-lab membership, equipment, rese
 
 ## ER Diagram
 
-Rendered Chen-style conceptual ER diagram for the report. This diagram follows the notation taught in Lecture 8 and Lecture 9: rectangles for entity types, diamonds for relationships, ovals for attributes, underlined key attributes, double lines for total participation, a double rectangle for a weak/dependent entity, a double diamond for its identifying relationship, a dashed underline for a partial key, composite attributes, derived attributes, and a disjoint subtype circle. The diagram keeps the main business entities and relationships readable; the physical schema diagram below shows the full table-level implementation.
+The report ER diagram is drawn as a conceptual Chen-style ER diagram. It follows
+classic notation from the database lectures: rectangles for entity types, diamonds
+for relationship types, ovals for attributes, underlined key attributes, single
+lines for partial participation, double lines for total participation, and 1/N/M
+labels for cardinality. In the rendered diagram, the cardinality labels are placed
+near the relationship diamonds so that the entity rectangles remain readable.
 
-- `docs/chen-er-diagram-current.svg`
-- `docs/chen-er-diagram-current.png`
+The conceptual diagram does not draw every bridge table as a separate rectangle.
+Instead, it shows the main business entities and relationships:
 
-Notation choices in the rendered diagram:
+| Entity rectangle | Main attributes shown as ovals |
+| --- | --- |
+| `USER` | <u>user_id</u>, username, full_name, email, active, penalty_points |
+| `ADMIN` | role subtype of `USER` |
+| `STUDENT` | role subtype of `USER` |
+| `TECHNICIAN` | role subtype of `USER` |
+| `LAB` | <u>lab_id</u>, lab_code, lab_name, building, room, capacity |
+| `EQUIPMENT` | <u>equipment_id</u>, asset_tag, equipment_name, category, status, risk_level |
+| `RESERVATION` | <u>reservation_id</u>, start_time, end_time, purpose, status, created_at |
+| `CONSUMABLE` | <u>consumable_id</u>, item_name, unit, quantity, reorder_level |
+| `MAINTENANCE_TICKET` | <u>ticket_id</u>, title, priority, status, reported_at, resolved_at |
+| `MAINTENANCE_UPDATE` | <u>update_id</u>, update_time, update_text |
+| `STOCK_TRANSACTION` | <u>transaction_id</u>, change_amount, reason, created_at |
 
-- `RESERVATION` has total participation in `REQUESTS` because every reservation has a requester.
-- `RESERVATION` has total participation in `INCLUDES` because the current service requires exactly one equipment item for each reservation.
-- `EQUIPMENT`, `CONSUMABLE`, `MAINTENANCE_TICKET`, and `MAINTENANCE_UPDATE` use double lines where the current schema or service requires the owner relationship.
-- `MAINTENANCE_UPDATE` is shown as a weak/dependent entity because update notes are meaningful only under one maintenance ticket; `UPDATES_OF` is therefore drawn as the identifying relationship.
-- `time_period` and `location` are composite attributes. `open_ticket_count` and `reservation_count` are derived attributes produced by report/view queries rather than simple stored fields.
-- `USER` is specialized into disjoint role subtypes (`ADMIN`, `STUDENT`, `TECHNICIAN`) to match the `role` constraint in the current schema.
+The `USER` entity is specialized into `ADMIN`, `STUDENT`, and `TECHNICIAN` using
+a disjoint role circle. This matches the current role constraint: each account has
+one role only.
 
-Physical schema reference diagram:
+Main relationship diamonds in the conceptual diagram:
 
-- `docs/er-diagram-current.svg`
-- `docs/er-diagram-current-full.png`
+| Relationship diamond | Meaning | Cardinality / participation idea |
+| --- | --- | --- |
+| `MANAGES` | admins manage labs | one admin can manage many labs; a lab may have a manager |
+| `MEMBER_OF` | students belong to labs | M:N; used to enforce that students reserve only equipment from linked labs |
+| `CONTAINS` | labs contain equipment | one lab contains many equipment items; every equipment item belongs to one lab |
+| `BOOKS` | reservations book equipment | many reservations can refer to one equipment item; every reservation books one equipment item |
+| `REQUESTS` | students create reservations | one student can make many reservations; every reservation has one requester |
+| `APPROVES` | admins approve reservations | one admin can approve many reservations; approval decision details are attached to the relationship |
+| `NEEDS` | reservations request consumables | M:N; `requested_quantity` is an attribute of this relationship |
+| `STORES` | labs store consumables | one lab stores many consumables |
+| `HAS_TICKET` | equipment has maintenance tickets | one equipment item can have many tickets |
+| `REPORTS` | users report maintenance tickets | one user can report many tickets |
+| `ASSIGNED_TO` | technicians handle maintenance tickets | one technician can handle many tickets; assignment can be empty before acceptance |
+| `UPDATES_OF` | tickets have maintenance updates | one ticket can have many update records |
+| `WRITES_UPDATE` | users write update records | one user can write many maintenance updates |
+| `STOCK_CHANGE` | consumables have stock transactions | one consumable can have many stock changes |
+| `ADJUSTS` | users perform stock changes | one user can perform many stock transactions |
 
-```mermaid
-erDiagram
-    USERS ||--o{ LABS : manages
-    USERS ||--o{ STUDENT_LABS : belongs_to
-    LABS ||--o{ STUDENT_LABS : has_students
-    LABS ||--o{ EQUIPMENT : contains
-    USERS ||--o{ RESERVATIONS : requests
-    EQUIPMENT ||--o{ RESERVATIONS : booked_for
-    RESERVATIONS ||--o{ RESERVATION_CONSUMABLES : requests
-    CONSUMABLES ||--o{ RESERVATION_CONSUMABLES : requested_in
-    RESERVATIONS ||--o{ APPROVALS : receives
-    USERS ||--o{ APPROVALS : decides
-    EQUIPMENT ||--o{ MAINTENANCE_TICKETS : has
-    USERS ||--o{ MAINTENANCE_TICKETS : reports
-    USERS ||--o{ MAINTENANCE_TICKETS : assigned_to
-    MAINTENANCE_TICKETS ||--o{ MAINTENANCE_UPDATES : contains
-    USERS ||--o{ MAINTENANCE_UPDATES : writes
-    LABS ||--o{ CONSUMABLES : stores
-    CONSUMABLES ||--o{ STOCK_TRANSACTIONS : records
-    USERS ||--o{ STOCK_TRANSACTIONS : performs
+The physical MySQL schema still contains 11 active tables. Two of them are bridge
+tables for many-to-many relationships:
 
-    USERS {
-      int user_id PK
-      varchar username UK
-      varchar password
-      varchar full_name
-      varchar email UK
-      varchar role
-      int penalty_points
-      boolean active
-    }
+- `student_labs` implements the conceptual `STUDENT` M:N `LAB` relationship.
+- `reservation_consumables` implements the conceptual `RESERVATION` M:N `CONSUMABLE`
+  relationship and stores `requested_quantity`.
 
-    LABS {
-      int lab_id PK
-      varchar lab_code UK
-      varchar lab_name
-      varchar building
-      varchar room
-      int capacity
-      int manager_id FK
-    }
+The three SQL views are not drawn as entity rectangles because they do not store
+independent data. They are query results used for UI display and reports.
 
-    EQUIPMENT {
-      int equipment_id PK
-      varchar asset_tag UK
-      varchar equipment_name
-      varchar category
-      int lab_id FK
-      varchar status
-      date purchase_date
-      varchar risk_level
-      varchar notes
-    }
+### Physical Schema Reference
 
-    STUDENT_LABS {
-      int user_id PK FK
-      int lab_id PK FK
-    }
-
-    RESERVATIONS {
-      int reservation_id PK
-      int requester_id FK
-      int equipment_id FK
-      timestamp start_time
-      timestamp end_time
-      varchar purpose
-      varchar status
-      timestamp created_at
-    }
-
-    RESERVATION_CONSUMABLES {
-      int reservation_id PK FK
-      int consumable_id PK FK
-      int requested_quantity
-    }
-
-    APPROVALS {
-      int approval_id PK
-      int reservation_id FK
-      int approver_id FK
-      varchar decision
-      timestamp decision_time
-      varchar comment
-    }
-
-    MAINTENANCE_TICKETS {
-      int ticket_id PK
-      int equipment_id FK
-      int reporter_id FK
-      int technician_id FK
-      varchar title
-      varchar description
-      varchar priority
-      varchar status
-      timestamp reported_at
-      timestamp resolved_at
-    }
-
-    MAINTENANCE_UPDATES {
-      int update_id PK
-      int ticket_id FK
-      int user_id FK
-      timestamp update_time
-      varchar update_text
-    }
-
-    CONSUMABLES {
-      int consumable_id PK
-      int lab_id FK
-      varchar item_name
-      varchar unit
-      int quantity
-      int reorder_level
-    }
-
-    STOCK_TRANSACTIONS {
-      int transaction_id PK
-      int consumable_id FK
-      int user_id FK
-      int change_amount
-      varchar reason
-      timestamp created_at
-    }
-```
+The physical table-level design is summarized below. The full SQL definition is stored in `src/main/resources/db/schema.sql`.
 
 ## Table Summary
 

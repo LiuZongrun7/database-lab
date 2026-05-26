@@ -148,7 +148,9 @@ The database contains 11 active tables:
 
 ### 4.2 ER Diagram
 
-Insert the Chen-style conceptual ER diagram from `docs/chen-er-diagram-current.png`. When explaining it, mention the teacher-style notation: double lines mean total participation, the double rectangle/double diamond pair shows the dependent maintenance update notes, dashed ovals show derived report attributes, and the `d` circle shows disjoint user roles. Use the physical schema diagram only as a supporting appendix if the report needs to show every bridge/history table.
+Insert the updated conceptual Chen-style ER diagram. The diagram should use rectangles for entity types, diamonds for relationship types, ovals for attributes, underlined key attributes, single lines for partial participation, double lines for total participation, and 1/N/M labels for cardinality. In the final diagram, the cardinality labels are placed near the relationship diamonds to keep the entity rectangles readable.
+
+The conceptual diagram focuses on the main business entities: `USER`, `ADMIN`, `STUDENT`, `TECHNICIAN`, `LAB`, `EQUIPMENT`, `RESERVATION`, `CONSUMABLE`, `MAINTENANCE_TICKET`, `MAINTENANCE_UPDATE`, and `STOCK_TRANSACTION`. Bridge tables such as `student_labs` and `reservation_consumables` are explained as the physical implementation of many-to-many relationships instead of being drawn as separate conceptual entity rectangles. The SQL views should not be drawn as entity rectangles because they are query results rather than stored entity sets.
 
 ### 4.3 Important Relationships
 
