@@ -1,6 +1,5 @@
 let currentUser = null;
 let equipmentCache = [];
-let technicianCache = [];
 let labCache = [];
 let consumableCache = [];
 let reservationCache = [];
@@ -97,39 +96,6 @@ const RISK_LABELS = {
     }
 };
 
-const CATEGORY_LABELS = {
-    zh: {
-        Computing: '计算设备',
-        Robotics: '机器人设备',
-        Measurement: '测量设备',
-        Sensor: '传感器',
-        Network: '网络设备'
-    },
-    en: {}
-};
-
-const EQUIPMENT_NAME_LABELS = {
-    zh: {
-        'GPU Workstation A': 'GPU 工作站 A',
-        'Mobile Robot TurtleBot': 'TurtleBot 移动机器人',
-        'Digital Oscilloscope': '数字示波器',
-        'ECG Sensor Kit': 'ECG 传感器套件',
-        'IoT Gateway Set': '物联网网关套件',
-        'Managed Switch Rack': '可管理交换机机架'
-    },
-    en: {}
-};
-
-const ITEM_LABELS = {
-    zh: {
-        'Robot battery pack': '机器人电池包',
-        'ECG electrode pad': 'ECG 电极贴片',
-        'Ethernet cable': '网线',
-        'Micro SD card': 'Micro SD 卡'
-    },
-    en: {}
-};
-
 const UNIT_LABELS = {
     zh: {
         piece: '件',
@@ -143,20 +109,9 @@ const UNIT_LABELS = {
     }
 };
 
-const DATA_TEXT_LABELS = {
-    zh: {
-        'Train small image classifier': '训练小型图像分类模型',
-        'IoT gateway demo preparation': '物联网网关演示准备',
-        'Measure sensor output for lab exercise': '测量实验课传感器输出',
-        'ECG cable is loose': 'ECG 线缆松动',
-        'Switch fan noise': '交换机风扇噪声'
-    },
-    en: {}
-};
-
 // The front-end keeps role rules scoped, so each demo account only sees its own tabs.
 const ROLE_TABS = {
-    ADMIN: ['equipment', 'reservations', 'maintenance', 'inventory', 'reports'],
+    ADMIN: ['equipment', 'reservations', 'inventory', 'reports'],
     STUDENT: ['reservations', 'equipment'],
     TECHNICIAN: ['maintenance', 'equipment', 'inventory']
 };
@@ -172,7 +127,7 @@ const MESSAGE_LABELS = {
         'Maintenance action is required': '请选择维修操作。',
         'Only open tickets can be accepted': '只有待处理工单可以接单。',
         'Only in-progress tickets can be marked as repaired': '只有处理中工单可以标记为修好。',
-        'Only the assigned technician or an admin can mark this ticket repaired': '只有接单技术员或管理员可以标记修好。',
+        'Only the assigned technician can mark this ticket repaired': '只有接单技术员可以标记修好。',
         'Unknown maintenance action': '未知维修操作。',
         'Equipment updated.': '设备信息已更新。',
         'Equipment retired.': '设备已标记为退役。',
@@ -186,12 +141,14 @@ const MESSAGE_LABELS = {
         'Reservations must use one fixed time slot: 08:00-14:00, 14:00-20:00, or 20:00-08:00.': '预约必须选择固定时段：08:00-14:00、14:00-20:00 或 20:00-08:00。',
         'Student can only reserve equipment from linked labs.': '学生只能预约已关联实验室里的设备。',
         'Admin permission required': '只有管理员可以执行这个操作。',
+        'Only students can create reservations.': '只有学生可以创建预约。',
+        'Technician permission required': '只有技术员可以执行这个操作。',
+        'Inventory permission required': '只有管理员或技术员可以调整库存。',
         'Purpose is required': '请填写用途。',
         'Start time and end time are required': '请填写开始时间和结束时间。',
         'End time must be after start time': '结束时间必须晚于开始时间。',
         'Equipment does not exist': '设备不存在。',
         'Only pending reservations can be decided': '只有待审批预约可以审批。',
-        'Technician or admin permission required': '只有技术员或管理员可以执行这个操作。',
         'Required field is missing: userId': '缺少用户身份信息，请重新登录。',
         'Field must be a number: userId': '用户身份信息格式不正确，请重新登录。',
         'Ticket title is required': '请填写工单标题。',
@@ -254,8 +211,12 @@ const UI_TEXT = {
         'state.processing': '处理中...',
         'maintenance.title': '维修工单',
         'maintenance.subtitle': '跟踪设备故障和维修处理进度。',
+        'maintenance.updateHistory': '维修更新记录',
+        'maintenance.noUpdates': '暂无维修更新记录。',
         'inventory.title': '耗材库存',
         'inventory.subtitle': '管理实验室耗材库存，并记录每一次库存变动。',
+        'inventory.transactionHistory': '库存变动记录',
+        'inventory.noTransactions': '暂无库存变动记录。',
         'reports.title': '统计报表',
         'reports.subtitle': '基于 SQL 视图和聚合查询生成的管理统计。',
         'reports.labUsage': '实验室使用情况',
@@ -307,11 +268,17 @@ const UI_TEXT = {
         'table.title': '标题',
         'table.priority': '优先级',
         'table.reportedAt': '上报时间',
+        'table.author': '记录人',
+        'table.time': '时间',
+        'table.updateText': '更新内容',
         'table.consumable': '耗材',
         'table.unit': '单位',
         'table.quantity': '数量',
         'table.reorderLevel': '补货线',
         'table.stockAlert': '库存提醒',
+        'table.operator': '操作人',
+        'table.changeAmount': '变动数量',
+        'table.reason': '原因',
         'table.reservations': '预约数',
         'table.approved': '已批准',
         'table.completed': '已完成',
@@ -339,6 +306,7 @@ const UI_TEXT = {
         'action.acceptTicket': '接单',
         'action.finishRepair': '修好',
         'action.adjust': '调整',
+        'action.history': '历史',
         'action.removeConsumable': '移除耗材',
         'modal.registerTitle': '注册学生账号',
         'modal.registerHint': '自助注册只开放学生身份，并且必须选择至少一个所属实验室。',
@@ -416,8 +384,12 @@ const UI_TEXT = {
         'state.processing': 'Processing...',
         'maintenance.title': 'Maintenance Tickets',
         'maintenance.subtitle': 'Track equipment faults and repair progress.',
+        'maintenance.updateHistory': 'Maintenance Updates',
+        'maintenance.noUpdates': 'No maintenance updates yet.',
         'inventory.title': 'Consumable Inventory',
         'inventory.subtitle': 'Manage laboratory consumables and record every stock change.',
+        'inventory.transactionHistory': 'Stock Transactions',
+        'inventory.noTransactions': 'No stock transactions yet.',
         'reports.title': 'Reports',
         'reports.subtitle': 'Management statistics generated from SQL views and aggregate queries.',
         'reports.labUsage': 'Laboratory Usage',
@@ -469,11 +441,17 @@ const UI_TEXT = {
         'table.title': 'Title',
         'table.priority': 'Priority',
         'table.reportedAt': 'Reported At',
+        'table.author': 'Author',
+        'table.time': 'Time',
+        'table.updateText': 'Update',
         'table.consumable': 'Consumable',
         'table.unit': 'Unit',
         'table.quantity': 'Quantity',
         'table.reorderLevel': 'Reorder Level',
         'table.stockAlert': 'Stock Alert',
+        'table.operator': 'Operator',
+        'table.changeAmount': 'Change',
+        'table.reason': 'Reason',
         'table.reservations': 'Reservations',
         'table.approved': 'Approved',
         'table.completed': 'Completed',
@@ -501,6 +479,7 @@ const UI_TEXT = {
         'action.acceptTicket': 'Accept',
         'action.finishRepair': 'Repaired',
         'action.adjust': 'Adjust',
+        'action.history': 'History',
         'action.removeConsumable': 'Remove consumable',
         'modal.registerTitle': 'Register Student Account',
         'modal.registerHint': 'Self-registration only creates student accounts and requires at least one linked lab.',
@@ -657,10 +636,13 @@ async function loadAll() {
         tasks.push(loadLabs());
     }
     if (canUseTab('reservations')) {
-        tasks.push(loadReservations(), loadConsumableChoices());
+        tasks.push(loadReservations());
+        if (currentUser.role === 'STUDENT') {
+            tasks.push(loadConsumableChoices());
+        }
     }
     if (canUseTab('maintenance')) {
-        tasks.push(loadTechnicians(), loadMaintenance());
+        tasks.push(loadMaintenance());
     }
     if (canUseTab('inventory')) {
         tasks.push(loadInventory());
@@ -690,6 +672,7 @@ function applyRoleVisibility() {
     });
     $('addEquipmentButton').classList.toggle('hidden', currentUser?.role !== 'ADMIN');
     $('addConsumableButton').classList.toggle('hidden', currentUser?.role !== 'ADMIN');
+    $('reservationForm')?.classList.toggle('hidden', currentUser?.role !== 'STUDENT');
     switchTab(allowedTabs[0] || 'equipment');
 }
 
@@ -722,13 +705,13 @@ async function loadEquipment(q = '') {
         <tr>
             <td>${e.id}</td>
             <td>${escapeHtml(e.assetTag)}</td>
-            <td>${escapeHtml(label(EQUIPMENT_NAME_LABELS, e.name))}</td>
-            <td>${escapeHtml(label(CATEGORY_LABELS, e.category))}</td>
+            <td>${escapeHtml(e.name)}</td>
+            <td>${escapeHtml(e.category)}</td>
             <td>${escapeHtml(e.labCode)}</td>
             <td>${badge(e.status)}</td>
             <td>${escapeHtml(label(RISK_LABELS, e.riskLevel))}</td>
             <td>${e.openTicketCount}</td>
-            <td>${equipmentActions(e)}</td>
+            <td class="actions-cell equipment-actions-cell">${equipmentActions(e)}</td>
         </tr>
     `);
     renderEquipmentPicker();
@@ -746,20 +729,21 @@ function equipmentActions(equipment) {
             buttons.push(`<button type="button" class="danger" onclick="openRetireEquipment(${equipment.id}, this)"><i class="icon-archive"></i> ${escapeHtml(t('action.retire'))}</button>`);
         }
     }
-    return buttons.length ? `<div class="row-actions">${buttons.join('')}</div>` : '';
+    return buttons.length ? `<div class="row-actions wide-actions">${buttons.join('')}</div>` : '';
 }
 
 async function loadLabs() {
     labCache = await get('/api/labs');
 }
 
-async function loadTechnicians() {
-    technicianCache = await get('/api/users/technicians');
-}
-
 function renderEquipmentPicker() {
     const container = $('reservationEquipment');
     if (!container) return;
+    if (currentUser?.role !== 'STUDENT') {
+        container.innerHTML = '';
+        clearSelectedEquipment();
+        return;
+    }
     if (selectedEquipmentId && !equipmentCache.some(item => String(item.id) === String(selectedEquipmentId))) {
         clearSelectedEquipment();
     }
@@ -780,7 +764,7 @@ function equipmentChoiceHtml(equipment) {
         <label class="${className.join(' ')}">
             <input type="radio" name="equipmentChoice" value="${equipment.id}" ${checked ? 'checked' : ''} ${bookable ? '' : 'disabled'}>
             <span class="equipment-choice-main">
-                <strong>${escapeHtml(label(EQUIPMENT_NAME_LABELS, equipment.name))}</strong>
+                <strong>${escapeHtml(equipment.name)}</strong>
                 <span>${escapeHtml(equipment.assetTag)} / ${escapeHtml(equipment.labCode)}</span>
             </span>
             <span class="equipment-choice-meta">
@@ -913,8 +897,8 @@ function updateSlotSummary() {
 
 function equipmentDisplayName(equipment) {
     return currentLanguage === 'zh'
-        ? `${label(EQUIPMENT_NAME_LABELS, equipment.name)}（${equipment.assetTag}）`
-        : `${label(EQUIPMENT_NAME_LABELS, equipment.name)} (${equipment.assetTag})`;
+        ? `${equipment.name}（${equipment.assetTag}）`
+        : `${equipment.name} (${equipment.assetTag})`;
 }
 
 function slotReasonText(reason) {
@@ -996,6 +980,10 @@ function optionHtml(value, text, selectedValue) {
 
 async function createReservation(event) {
     event.preventDefault();
+    if (currentUser?.role !== 'STUDENT') {
+        showToast('Only students can create reservations.', true);
+        return;
+    }
     const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
     await withButtonLock(submitButton, async () => {
         const data = new FormData(event.target);
@@ -1054,14 +1042,14 @@ async function loadReservations() {
         <tr>
             <td>${r.id}</td>
             <td>${escapeHtml(r.assetTag)}</td>
-            <td>${escapeHtml(translateEquipmentNames(r.equipmentName))}</td>
+            <td>${escapeHtml(r.equipmentName)}</td>
             <td>${escapeHtml(r.requesterName)}</td>
             <td>${escapeHtml(r.startTime)}</td>
             <td>${escapeHtml(r.endTime)}</td>
             <td>${badge(r.status)}</td>
-            <td>${escapeHtml(label(DATA_TEXT_LABELS, r.purpose))}</td>
-            <td>${escapeHtml(translateConsumableNeeds(r.consumableNeeds))}</td>
-            <td>${reservationActions(r, canDecide)}</td>
+            <td>${escapeHtml(r.purpose)}</td>
+            <td>${escapeHtml(consumableNeedsText(r.consumableNeeds))}</td>
+            <td class="actions-cell decision-actions-cell">${reservationActions(r, canDecide)}</td>
         </tr>
     `);
 }
@@ -1143,7 +1131,7 @@ function updateConsumableEmptyState() {
 }
 
 function consumableOptionText(item) {
-    return `${item.labCode} / ${label(ITEM_LABELS, item.itemName)}`;
+    return `${item.labCode} / ${item.itemName}`;
 }
 
 function collectConsumableRows() {
@@ -1174,7 +1162,7 @@ function reservationActions(row, canDecide) {
     if (currentUser?.role === 'STUDENT' && row.canCancel) {
         buttons.push(`<button type="button" class="secondary" onclick="cancelReservation(${row.id}, this)"><i class="icon-x-circle"></i> ${escapeHtml(t('action.cancel'))}</button>`);
     }
-    return buttons.join(' ');
+    return buttons.length ? `<div class="row-actions equal-actions decision-actions">${buttons.join('')}</div>` : '';
 }
 
 function decideReservation(id, approve, triggerButton = null) {
@@ -1234,41 +1222,52 @@ function openReportProblem(equipmentId, triggerButton = null) {
         const result = await post('/api/maintenance/report', data);
         showToast(result.message, !result.ok);
         if (result.ok) {
-            await Promise.all([loadEquipment(), loadMaintenance()]);
+            await Promise.all([
+                loadEquipment(),
+                canUseTab('maintenance') ? loadMaintenance() : Promise.resolve()
+            ]);
         }
         return result.ok;
     }, { onClose: releaseTrigger });
 }
 
 async function loadMaintenance() {
-    const rows = await get('/api/maintenance');
+    const rows = await get(`/api/maintenance?userId=${encodeURIComponent(currentUser.id)}`);
     maintenanceCache = rows;
-    const canUpdate = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'TECHNICIAN');
-    fillRows('maintenanceRows', rows, ticket => `
+    renderMaintenanceRows();
+}
+
+function renderMaintenanceRows() {
+    const canUpdate = currentUser?.role === 'TECHNICIAN';
+    fillRows('maintenanceRows', maintenanceCache, ticket => `
         <tr>
             <td>${ticket.id}</td>
             <td>${escapeHtml(ticket.assetTag)}</td>
-            <td>${escapeHtml(label(EQUIPMENT_NAME_LABELS, ticket.equipmentName))}</td>
+            <td>${escapeHtml(ticket.equipmentName)}</td>
             <td>${escapeHtml(ticket.reporterName)}</td>
             <td>${escapeHtml(translatePersonText(ticket.technicianName))}</td>
-            <td>${escapeHtml(label(DATA_TEXT_LABELS, ticket.title))}</td>
+            <td>${escapeHtml(ticket.title)}</td>
             <td>${escapeHtml(label(RISK_LABELS, ticket.priority))}</td>
             <td>${badge(ticket.status)}</td>
             <td>${escapeHtml(ticket.reportedAt)}</td>
-            <td>${canUpdate ? maintenanceActions(ticket) : ''}</td>
+            <td class="actions-cell maintenance-actions-cell">${canUpdate ? maintenanceActions(ticket) : ''}</td>
         </tr>
     `);
 }
 
 function maintenanceActions(ticket) {
     const buttons = [];
+    if (currentUser?.role !== 'TECHNICIAN') {
+        return '';
+    }
+    buttons.push(`<button type="button" class="secondary" onclick="openMaintenanceHistory(${ticket.id}, this)"><i class="icon-list"></i> ${escapeHtml(t('action.history'))}</button>`);
     if (ticket.status === 'OPEN') {
         buttons.push(`<button type="button" onclick="handleMaintenanceAction(${ticket.id}, 'ACCEPT', this)"><i class="icon-wrench"></i> ${escapeHtml(t('action.acceptTicket'))}</button>`);
     }
-    if (ticket.status === 'IN_PROGRESS' && (currentUser?.role === 'ADMIN' || Number(ticket.technicianId) === currentUser?.id)) {
+    if (ticket.status === 'IN_PROGRESS' && Number(ticket.technicianId) === currentUser?.id) {
         buttons.push(`<button type="button" onclick="handleMaintenanceAction(${ticket.id}, 'RESOLVE', this)"><i class="icon-check"></i> ${escapeHtml(t('action.finishRepair'))}</button>`);
     }
-    return buttons.length ? `<div class="row-actions">${buttons.join('')}</div>` : '';
+    return buttons.length ? `<div class="row-actions wide-actions">${buttons.join('')}</div>` : '';
 }
 
 async function handleMaintenanceAction(ticketId, action, triggerButton = null) {
@@ -1285,24 +1284,72 @@ async function handleMaintenanceAction(ticketId, action, triggerButton = null) {
     });
 }
 
+async function openMaintenanceHistory(ticketId, triggerButton = null) {
+    const releaseTrigger = lockButton(triggerButton);
+    try {
+        const rows = await get(`/api/maintenance/updates?userId=${encodeURIComponent(currentUser.id)}&ticketId=${encodeURIComponent(ticketId)}`);
+        const body = rows.length ? `
+            <div class="table-wrap compact-table">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>${escapeHtml(t('table.time'))}</th>
+                        <th>${escapeHtml(t('table.author'))}</th>
+                        <th>${escapeHtml(t('table.updateText'))}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${rows.map(row => `
+                        <tr>
+                            <td>${row.id}</td>
+                            <td>${escapeHtml(row.time)}</td>
+                            <td>${escapeHtml(row.authorName)} (${escapeHtml(label(ROLE_LABELS, row.authorRole))})</td>
+                            <td>${escapeHtml(row.text)}</td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        ` : `<p class="empty-note">${escapeHtml(t('maintenance.noUpdates'))}</p>`;
+        openReadOnlyModal(t('maintenance.updateHistory'), body, releaseTrigger);
+    } catch (error) {
+        releaseTrigger();
+        throw error;
+    }
+}
+
 async function loadInventory() {
     const rows = await get(`/api/inventory?userId=${currentUser.id}`);
     consumableCache = rows;
     inventoryCache = rows;
     renderConsumableRequestEditor(collectConsumableRows());
+    renderInventoryRows();
+}
+
+function renderInventoryRows() {
     const canChange = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'TECHNICIAN');
-    fillRows('inventoryRows', rows, item => `
+    fillRows('inventoryRows', inventoryCache, item => `
         <tr>
             <td>${item.id}</td>
             <td>${escapeHtml(item.labCode)}</td>
-            <td>${escapeHtml(label(ITEM_LABELS, item.itemName))}</td>
+            <td>${escapeHtml(item.itemName)}</td>
             <td>${escapeHtml(label(UNIT_LABELS, item.unit))}</td>
             <td>${item.quantity}</td>
             <td>${item.reorderLevel}</td>
             <td>${item.lowStock ? badge('LOW') : `<span style="color: var(--text-muted);">${escapeHtml(t('common.normal'))}</span>`}</td>
-            <td>${canChange ? `<div class="row-actions"><button type="button" onclick="openChangeStock(${item.id}, this)"><i class="icon-plus-minus"></i> ${escapeHtml(t('action.adjust'))}</button></div>` : ''}</td>
+            <td class="actions-cell inventory-actions-cell">${canChange ? inventoryActions(item) : ''}</td>
         </tr>
     `);
+}
+
+function inventoryActions(item) {
+    return `
+        <div class="row-actions equal-actions inventory-actions">
+            <button type="button" class="secondary" onclick="openStockHistory(${item.id}, this)"><i class="icon-list"></i> ${escapeHtml(t('action.history'))}</button>
+            <button type="button" onclick="openChangeStock(${item.id}, this)"><i class="icon-plus-minus"></i> ${escapeHtml(t('action.adjust'))}</button>
+        </div>
+    `;
 }
 
 async function openConsumableForm() {
@@ -1350,10 +1397,48 @@ function openChangeStock(consumableId, triggerButton = null) {
     }, { onClose: releaseTrigger });
 }
 
+async function openStockHistory(consumableId, triggerButton = null) {
+    const releaseTrigger = lockButton(triggerButton);
+    try {
+        const rows = await get(`/api/inventory/transactions?userId=${encodeURIComponent(currentUser.id)}&consumableId=${encodeURIComponent(consumableId)}`);
+        const body = rows.length ? `
+            <div class="table-wrap compact-table">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>${escapeHtml(t('table.time'))}</th>
+                        <th>${escapeHtml(t('table.operator'))}</th>
+                        <th>${escapeHtml(t('table.changeAmount'))}</th>
+                        <th>${escapeHtml(t('table.reason'))}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${rows.map(row => `
+                        <tr>
+                            <td>${row.id}</td>
+                            <td>${escapeHtml(row.time)}</td>
+                            <td>${escapeHtml(row.userName)} (${escapeHtml(label(ROLE_LABELS, row.userRole))})</td>
+                            <td>${row.changeAmount > 0 ? '+' : ''}${row.changeAmount}</td>
+                            <td>${escapeHtml(row.reason)}</td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        ` : `<p class="empty-note">${escapeHtml(t('inventory.noTransactions'))}</p>`;
+        openReadOnlyModal(t('inventory.transactionHistory'), body, releaseTrigger);
+    } catch (error) {
+        releaseTrigger();
+        throw error;
+    }
+}
+
 async function loadReports() {
+    const query = `?userId=${encodeURIComponent(currentUser.id)}`;
     const [labRows, statusRows] = await Promise.all([
-        get('/api/reports/lab-usage'),
-        get('/api/reports/equipment-status')
+        get(`/api/reports/lab-usage${query}`),
+        get(`/api/reports/equipment-status${query}`)
     ]);
     labReportCache = labRows;
     statusReportCache = statusRows;
@@ -1427,6 +1512,36 @@ function openModal(title, bodyHtml, onSubmit, options = {}) {
         if (!submitted) {
             options.onClose?.();
         }
+        modal.oncancel = null;
+        modal.onclose = null;
+    };
+    modal.showModal();
+}
+
+function openReadOnlyModal(title, bodyHtml, releaseTrigger = null) {
+    const modal = $('modal');
+    const form = $('modalForm');
+    const submitButton = $('modalSubmit');
+    const cancelButton = $('modalCancel');
+    let released = false;
+    const releaseOnce = () => {
+        if (!released) {
+            releaseTrigger?.();
+            released = true;
+        }
+    };
+    $('modalTitle').textContent = title;
+    $('modalBody').innerHTML = bodyHtml;
+    resetButton(cancelButton);
+    resetButton(submitButton);
+    submitButton.classList.add('hidden');
+    form.onsubmit = (event) => event.preventDefault();
+    modal.oncancel = () => {
+        releaseOnce();
+    };
+    modal.onclose = () => {
+        releaseOnce();
+        submitButton.classList.remove('hidden');
         modal.oncancel = null;
         modal.onclose = null;
     };
@@ -1545,13 +1660,13 @@ function rerenderCurrentData() {
             <tr>
                 <td>${e.id}</td>
                 <td>${escapeHtml(e.assetTag)}</td>
-                <td>${escapeHtml(label(EQUIPMENT_NAME_LABELS, e.name))}</td>
-                <td>${escapeHtml(label(CATEGORY_LABELS, e.category))}</td>
+                <td>${escapeHtml(e.name)}</td>
+                <td>${escapeHtml(e.category)}</td>
                 <td>${escapeHtml(e.labCode)}</td>
                 <td>${badge(e.status)}</td>
                 <td>${escapeHtml(label(RISK_LABELS, e.riskLevel))}</td>
                 <td>${e.openTicketCount}</td>
-                <td>${equipmentActions(e)}</td>
+                <td class="actions-cell equipment-actions-cell">${equipmentActions(e)}</td>
             </tr>
         `);
         renderEquipmentPicker();
@@ -1563,48 +1678,22 @@ function rerenderCurrentData() {
             <tr>
                 <td>${r.id}</td>
                 <td>${escapeHtml(r.assetTag)}</td>
-                <td>${escapeHtml(translateEquipmentNames(r.equipmentName))}</td>
+                <td>${escapeHtml(r.equipmentName)}</td>
                 <td>${escapeHtml(r.requesterName)}</td>
                 <td>${escapeHtml(r.startTime)}</td>
                 <td>${escapeHtml(r.endTime)}</td>
                 <td>${badge(r.status)}</td>
-                <td>${escapeHtml(label(DATA_TEXT_LABELS, r.purpose))}</td>
-                <td>${escapeHtml(translateConsumableNeeds(r.consumableNeeds))}</td>
-                <td>${reservationActions(r, canDecide)}</td>
+                <td>${escapeHtml(r.purpose)}</td>
+                <td>${escapeHtml(consumableNeedsText(r.consumableNeeds))}</td>
+                <td class="actions-cell decision-actions-cell">${reservationActions(r, canDecide)}</td>
             </tr>
         `);
     }
     if (maintenanceCache.length > 0) {
-        const canUpdate = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'TECHNICIAN');
-        fillRows('maintenanceRows', maintenanceCache, ticket => `
-            <tr>
-                <td>${ticket.id}</td>
-                <td>${escapeHtml(ticket.assetTag)}</td>
-                <td>${escapeHtml(label(EQUIPMENT_NAME_LABELS, ticket.equipmentName))}</td>
-                <td>${escapeHtml(ticket.reporterName)}</td>
-                <td>${escapeHtml(translatePersonText(ticket.technicianName))}</td>
-                <td>${escapeHtml(label(DATA_TEXT_LABELS, ticket.title))}</td>
-                <td>${escapeHtml(label(RISK_LABELS, ticket.priority))}</td>
-                <td>${badge(ticket.status)}</td>
-                <td>${escapeHtml(ticket.reportedAt)}</td>
-                <td>${canUpdate ? maintenanceActions(ticket) : ''}</td>
-            </tr>
-        `);
+        renderMaintenanceRows();
     }
     if (inventoryCache.length > 0) {
-        const canChange = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'TECHNICIAN');
-        fillRows('inventoryRows', inventoryCache, item => `
-            <tr>
-                <td>${item.id}</td>
-                <td>${escapeHtml(item.labCode)}</td>
-                <td>${escapeHtml(label(ITEM_LABELS, item.itemName))}</td>
-                <td>${escapeHtml(label(UNIT_LABELS, item.unit))}</td>
-                <td>${item.quantity}</td>
-                <td>${item.reorderLevel}</td>
-                <td>${item.lowStock ? badge('LOW') : `<span style="color: var(--text-muted);">${escapeHtml(t('common.normal'))}</span>`}</td>
-                <td>${canChange ? `<div class="row-actions"><button type="button" onclick="openChangeStock(${item.id}, this)"><i class="icon-plus-minus"></i> ${escapeHtml(t('action.adjust'))}</button></div>` : ''}</td>
-            </tr>
-        `);
+        renderInventoryRows();
         renderConsumableRequestEditor(collectConsumableRows());
     }
     if (labReportCache.length > 0 || statusReportCache.length > 0) {
@@ -1646,25 +1735,12 @@ function label(map, value) {
     return entries[String(value)] || value || '';
 }
 
-function translateEquipmentNames(value) {
-    return String(value || '')
-        .split(', ')
-        .map(name => label(EQUIPMENT_NAME_LABELS, name))
-        .join(currentLanguage === 'zh' ? '，' : ', ');
-}
-
-function translateConsumableNeeds(value) {
+function consumableNeedsText(value) {
     const text = String(value || '').trim();
     if (!text) {
         return t('common.none');
     }
-    return text.split(', ').map(item => {
-        const match = item.match(/^(.+) x(\d+)$/);
-        if (!match) {
-            return item;
-        }
-        return `${label(ITEM_LABELS, match[1])} x${match[2]}`;
-    }).join(currentLanguage === 'zh' ? '，' : ', ');
+    return text;
 }
 
 function translatePersonText(value) {

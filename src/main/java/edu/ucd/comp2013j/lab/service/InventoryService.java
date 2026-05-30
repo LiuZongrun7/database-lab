@@ -6,6 +6,7 @@ import edu.ucd.comp2013j.lab.db.Db;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 
 public class InventoryService {
     private final Database database;
@@ -47,6 +48,10 @@ public class InventoryService {
     }
 
     public int addConsumable(int labId, String itemName, String unit, int quantity, int reorderLevel) {
+        return addConsumable(labId, itemName, unit, quantity, reorderLevel, null);
+    }
+
+    public int addConsumable(int labId, String itemName, String unit, int quantity, int reorderLevel, Integer userId) {
         if (itemName == null || itemName.isBlank()) {
             throw new IllegalArgumentException("Consumable item is required");
         }
@@ -59,7 +64,26 @@ public class InventoryService {
         if (reorderLevel < 0) {
             throw new IllegalArgumentException("Reorder level cannot be negative");
         }
-        // Creating an item type is separate from later stock movement records.
-        return inventoryDao.create(labId, itemName.trim(), unit.trim(), quantity, reorderLevel);
+        try (Connection connection = database.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                int consumableId = inventoryDao.create(connection, labId, itemName.trim(), unit.trim(), quantity, reorderLevel);
+                if (userId != null && quantity > 0) {
+                    inventoryDao.addStockTransaction(connection, consumableId, userId, quantity, "Initial stock count");
+                }
+                connection.commit();
+                return consumableId;
+            } catch (SQLIntegrityConstraintViolationException ex) {
+                connection.rollback();
+                throw new IllegalArgumentException("Consumable item already exists in this lab");
+            } catch (RuntimeException | SQLException ex) {
+                connection.rollback();
+                throw ex;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException ex) {
+            throw Db.fail(ex);
+        }
     }
 }

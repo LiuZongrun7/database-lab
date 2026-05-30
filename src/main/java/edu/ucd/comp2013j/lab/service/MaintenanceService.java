@@ -48,7 +48,7 @@ public class MaintenanceService {
         }
     }
 
-    public void handleTicketAction(int ticketId, String action, int userId, boolean admin) {
+    public void handleTicketAction(int ticketId, String action, int userId) {
         if (action == null || action.isBlank()) {
             throw new IllegalArgumentException("Maintenance action is required");
         }
@@ -56,7 +56,7 @@ public class MaintenanceService {
             connection.setAutoCommit(false);
             try {
                 TicketState ticket = findTicketState(connection, ticketId);
-                applyAction(connection, ticketId, ticket, action.trim(), userId, admin);
+                applyAction(connection, ticketId, ticket, action.trim(), userId);
                 connection.commit();
             } catch (RuntimeException | SQLException ex) {
                 connection.rollback();
@@ -69,7 +69,7 @@ public class MaintenanceService {
         }
     }
 
-    private void applyAction(Connection connection, int ticketId, TicketState ticket, String action, int userId, boolean admin)
+    private void applyAction(Connection connection, int ticketId, TicketState ticket, String action, int userId)
             throws SQLException {
         if ("ACCEPT".equals(action)) {
             if (!"OPEN".equals(ticket.status())) {
@@ -83,8 +83,8 @@ public class MaintenanceService {
             if (!"IN_PROGRESS".equals(ticket.status())) {
                 throw new IllegalArgumentException("Only in-progress tickets can be marked as repaired");
             }
-            if (!admin && ticket.technicianId() != userId) {
-                throw new IllegalArgumentException("Only the assigned technician or an admin can mark this ticket repaired");
+            if (ticket.technicianId() != userId) {
+                throw new IllegalArgumentException("Only the assigned technician can mark this ticket repaired");
             }
             maintenanceDao.assign(connection, ticketId, userId, "RESOLVED", userId, "Repair finished.");
             if (!hasActiveTickets(connection, ticket.equipmentId())) {

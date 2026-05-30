@@ -9,10 +9,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MaintenanceDao {
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     private final Database database;
 
     public MaintenanceDao(Database database) {
@@ -111,6 +116,36 @@ public class MaintenanceDao {
             ps.setInt(2, userId);
             ps.setString(3, note);
             ps.executeUpdate();
+        }
+    }
+
+    public List<Map<String, ?>> findUpdatesForTicket(int ticketId) {
+        String sql = """
+                SELECT mu.update_id, mu.update_text, mu.update_time,
+                       u.full_name AS author_name, u.role AS author_role
+                FROM maintenance_updates mu
+                JOIN users u ON mu.user_id = u.user_id
+                WHERE mu.ticket_id = ?
+                ORDER BY mu.update_time DESC, mu.update_id DESC
+                """;
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, ticketId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Map<String, ?>> updates = new ArrayList<>();
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", rs.getInt("update_id"));
+                    row.put("authorName", rs.getString("author_name"));
+                    row.put("authorRole", rs.getString("author_role"));
+                    row.put("text", rs.getString("update_text"));
+                    row.put("time", rs.getTimestamp("update_time").toLocalDateTime().format(TIME_FORMAT));
+                    updates.add(row);
+                }
+                return updates;
+            }
+        } catch (SQLException ex) {
+            throw Db.fail(ex);
         }
     }
 

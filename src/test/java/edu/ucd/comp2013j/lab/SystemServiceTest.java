@@ -2,6 +2,7 @@ package edu.ucd.comp2013j.lab;
 
 import edu.ucd.comp2013j.lab.dao.EquipmentDao;
 import edu.ucd.comp2013j.lab.dao.InventoryDao;
+import edu.ucd.comp2013j.lab.dao.MaintenanceDao;
 import edu.ucd.comp2013j.lab.dao.ReservationDao;
 import edu.ucd.comp2013j.lab.dao.UserDao;
 import edu.ucd.comp2013j.lab.db.Database;
@@ -128,6 +129,19 @@ class SystemServiceTest {
     }
 
     @Test
+    void onlyStudentsCanCreateReservations() {
+        User admin = userDao.login("admin", "123").orElseThrow();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> reservationService.requestReservation(List.of(5), admin.getId(),
+                        LocalDateTime.of(2026, 5, 25, 8, 0),
+                        LocalDateTime.of(2026, 5, 25, 14, 0),
+                        "Admin should not create reservation", Map.of()));
+
+        assertTrue(ex.getMessage().contains("Only students"));
+    }
+
+    @Test
     void slotAvailabilityShowsBookedSeedSlot() {
         User student = userDao.login("student_net", "123").orElseThrow();
         java.time.LocalDate date = java.time.LocalDate.now().plusDays(4);
@@ -203,7 +217,8 @@ class SystemServiceTest {
 
     @Test
     void adminCanAddConsumableType() {
-        int newId = inventoryService.addConsumable(1, "USB-C cable", "piece", 5, 2);
+        User admin = userDao.login("admin", "123").orElseThrow();
+        int newId = inventoryService.addConsumable(1, "USB-C cable", "piece", 5, 2, admin.getId());
 
         Consumable created = inventoryDao.findAll().stream()
                 .filter(c -> c.getId() == newId)
@@ -211,6 +226,18 @@ class SystemServiceTest {
                 .orElseThrow();
         assertEquals("USB-C cable", created.getItemName());
         assertEquals(5, created.getQuantity());
+        List<Map<String, ?>> history = inventoryDao.findTransactionsForConsumable(newId);
+        assertEquals(1, history.size());
+        assertEquals(5, history.get(0).get("changeAmount"));
+        assertEquals("Initial stock count", history.get(0).get("reason"));
+    }
+
+    @Test
+    void maintenanceUpdatesAreQueryableForTicket() {
+        List<Map<String, ?>> updates = new MaintenanceDao(database).findUpdatesForTicket(1);
+
+        assertFalse(updates.isEmpty());
+        assertEquals("Checked the cable connector. Need to order a replacement cable.", updates.get(0).get("text"));
     }
 
     @Test
@@ -251,18 +278,18 @@ class SystemServiceTest {
 
     @Test
     void equipmentStaysInMaintenanceUntilAllTicketsAreFinished() {
-        User admin = userDao.login("admin", "123").orElseThrow();
+        User technician = userDao.login("tech", "123").orElseThrow();
         Equipment equipment = equipmentDao.findAll().stream()
                 .filter(e -> e.getAssetTag().equals("NET-SW-006"))
                 .findFirst()
                 .orElseThrow();
         assertEquals("MAINTENANCE", equipment.getStatus());
 
-        int newTicket = maintenanceService.reportProblem(equipment.getId(), admin.getId(),
+        int newTicket = maintenanceService.reportProblem(equipment.getId(), technician.getId(),
                 "Second switch issue", "Another fault is still being checked.", "MEDIUM");
 
-        maintenanceService.handleTicketAction(newTicket, "ACCEPT", admin.getId(), true);
-        maintenanceService.handleTicketAction(newTicket, "RESOLVE", admin.getId(), true);
+        maintenanceService.handleTicketAction(newTicket, "ACCEPT", technician.getId());
+        maintenanceService.handleTicketAction(newTicket, "RESOLVE", technician.getId());
         String statusWithSeedTicketStillOpen = equipmentDao.findAll().stream()
                 .filter(e -> e.getId() == equipment.getId())
                 .findFirst()
@@ -270,8 +297,8 @@ class SystemServiceTest {
                 .getStatus();
         assertEquals("MAINTENANCE", statusWithSeedTicketStillOpen);
 
-        maintenanceService.handleTicketAction(2, "ACCEPT", admin.getId(), true);
-        maintenanceService.handleTicketAction(2, "RESOLVE", admin.getId(), true);
+        maintenanceService.handleTicketAction(2, "ACCEPT", technician.getId());
+        maintenanceService.handleTicketAction(2, "RESOLVE", technician.getId());
         String statusAfterAllTicketsClosed = equipmentDao.findAll().stream()
                 .filter(e -> e.getId() == equipment.getId())
                 .findFirst()

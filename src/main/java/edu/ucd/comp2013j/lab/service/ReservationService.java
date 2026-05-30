@@ -192,7 +192,7 @@ public class ReservationService {
                     throw new IllegalArgumentException("Unknown user id: " + userId);
                 }
                 if (!"STUDENT".equals(rs.getString("role"))) {
-                    return true;
+                    throw new IllegalArgumentException("Only students can create reservations.");
                 }
             }
         }

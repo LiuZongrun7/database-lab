@@ -36,6 +36,7 @@ public class Database {
     }
 
     public Database(String jdbcUrl, String username, String password, boolean createDatabase) {
+        loadMysqlDriver();
         this.jdbcUrl = jdbcUrl;
         this.username = username;
         this.password = password;
@@ -136,5 +137,13 @@ public class Database {
             return defaultValue;
         }
         return value;
+    }
+
+    private static void loadMysqlDriver() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException ex) {
+            throw new IllegalStateException("MySQL JDBC driver is missing from the runtime classpath", ex);
+        }
     }
 }

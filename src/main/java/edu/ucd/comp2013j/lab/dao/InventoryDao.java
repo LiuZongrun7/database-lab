@@ -11,10 +11,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class InventoryDao {
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     private final Database database;
 
     public InventoryDao(Database database) {
@@ -75,12 +80,22 @@ public class InventoryDao {
     }
 
     public int create(int labId, String itemName, String unit, int quantity, int reorderLevel) {
+        try (Connection connection = database.getConnection()) {
+            return create(connection, labId, itemName, unit, quantity, reorderLevel);
+        } catch (SQLIntegrityConstraintViolationException ex) {
+            throw new IllegalArgumentException("Consumable item already exists in this lab");
+        } catch (SQLException ex) {
+            throw Db.fail(ex);
+        }
+    }
+
+    public int create(Connection connection, int labId, String itemName, String unit, int quantity, int reorderLevel)
+            throws SQLException {
         String sql = """
                 INSERT INTO consumables (lab_id, item_name, unit, quantity, reorder_level)
                 VALUES (?, ?, ?, ?, ?)
                 """;
-        try (Connection connection = database.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, labId);
             ps.setString(2, itemName);
             ps.setString(3, unit);
@@ -93,10 +108,6 @@ public class InventoryDao {
                 }
             }
             throw new SQLException("Consumable id was not generated");
-        } catch (SQLIntegrityConstraintViolationException ex) {
-            throw new IllegalArgumentException("Consumable item already exists in this lab");
-        } catch (SQLException ex) {
-            throw Db.fail(ex);
         }
     }
 
@@ -118,6 +129,37 @@ public class InventoryDao {
             ps.setInt(3, changeAmount);
             ps.setString(4, reason);
             ps.executeUpdate();
+        }
+    }
+
+    public List<Map<String, ?>> findTransactionsForConsumable(int consumableId) {
+        String sql = """
+                SELECT st.transaction_id, st.change_amount, st.reason, st.created_at,
+                       u.full_name AS user_name, u.role AS user_role
+                FROM stock_transactions st
+                JOIN users u ON st.user_id = u.user_id
+                WHERE st.consumable_id = ?
+                ORDER BY st.created_at DESC, st.transaction_id DESC
+                """;
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, consumableId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Map<String, ?>> rows = new ArrayList<>();
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", rs.getInt("transaction_id"));
+                    row.put("userName", rs.getString("user_name"));
+                    row.put("userRole", rs.getString("user_role"));
+                    row.put("changeAmount", rs.getInt("change_amount"));
+                    row.put("reason", rs.getString("reason"));
+                    row.put("time", rs.getTimestamp("created_at").toLocalDateTime().format(TIME_FORMAT));
+                    rows.add(row);
+                }
+                return rows;
+            }
+        } catch (SQLException ex) {
+            throw Db.fail(ex);
         }
     }
 
