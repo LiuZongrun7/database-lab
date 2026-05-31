@@ -37,9 +37,7 @@ CREATE TABLE labs (
     lab_name VARCHAR(100) NOT NULL,
     building VARCHAR(60) NOT NULL,
     room VARCHAR(30) NOT NULL,
-    capacity INT NOT NULL CHECK (capacity > 0),
-    manager_id INT,
-    CONSTRAINT fk_lab_manager FOREIGN KEY (manager_id) REFERENCES users(user_id)
+    capacity INT NOT NULL CHECK (capacity > 0)
 );
 
 -- Equipment is kept even after retirement so historical reservations and tickets stay valid.

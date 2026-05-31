@@ -6,10 +6,10 @@ INSERT INTO users (username, password, full_name, email, role, penalty_points) V
 ('student_net', '123', 'Noah Lin', 'noah.lin@student.edu', 'STUDENT', 0),
 ('student_multi', '123', 'Maya Liu', 'maya.liu@student.edu', 'STUDENT', 0);
 
-INSERT INTO labs (lab_code, lab_name, building, room, capacity, manager_id) VALUES
-('AI-LAB', 'Artificial Intelligence Laboratory', 'Engineering Building', 'E203', 28, 1),
-('BIO-LAB', 'Bio-signal Computing Laboratory', 'Science Centre', 'S114', 18, 1),
-('NET-LAB', 'Networks and IoT Laboratory', 'Engineering Building', 'E305', 24, 1);
+INSERT INTO labs (lab_code, lab_name, building, room, capacity) VALUES
+('AI-LAB', 'Artificial Intelligence Laboratory', 'Engineering Building', 'E203', 28),
+('BIO-LAB', 'Bio-signal Computing Laboratory', 'Science Centre', 'S114', 18),
+('NET-LAB', 'Networks and IoT Laboratory', 'Engineering Building', 'E305', 24);
 
 INSERT INTO equipment (asset_tag, equipment_name, category, lab_id, status, purchase_date, risk_level, notes) VALUES
 ('AI-GPU-001', 'GPU Workstation A', 'Computing', 1, 'AVAILABLE', '2024-09-12', 'MEDIUM', 'CUDA workstation for deep learning labs'),
